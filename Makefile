@@ -27,5 +27,8 @@ yehos.img: kernel.bin bootloader.bin
 .c.o:
 	gcc -c $(CFLAGS) -o $@ $<
 
+run: yehos.img
+	qemu-system-i386 -drive format=raw,file=$<
+
 clean:
 	rm -f bootloader.bin kernel.bin kernel.elf yehos.img *.lst *.map *.o
