@@ -147,6 +147,9 @@ protmain:
 
     mov esp, 0x6000      ; data stack grows down
 
+    mov eax, 0x8000
+    call eax
+
 _halt:
     hlt
     jmp _halt
