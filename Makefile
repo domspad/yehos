@@ -15,8 +15,8 @@ all: yehos.img
 bootloader.bin: bootloader.asm
 	nasm -f bin -l bootloader.lst -o bootloader.bin bootloader.asm
 
-kernel.bin: kmain.o kernel.ld
-	ld -m elf_i386 -T kernel.ld -o kernel.elf kmain.o
+kernel.bin: kmain.o kernel.ld kb.o
+	ld -m elf_i386 -T kernel.ld -o kernel.elf kb.o
 	objdump -d --disassembler-options=intel kernel.elf > kernel.lst
 	objcopy -O binary kernel.elf $@
 

@@ -1,4 +1,5 @@
 ENTRY (kmain)
+STARTUP (kmain.o)
 
 . = 0x008000;
 
