@@ -1,10 +1,9 @@
 #include "asmhelpers.h"
 #include "kb.h"
+#include "vgatext.h"
 
 extern char START_BSS[], END_BSS[];
 u16 scancode_to_ascii(u8 scancode);
-void vga_putc(u8 ch, u8 color);
-void vga_cls(void);
 void setup_interrupts(void *idtaddr);
 
 void
