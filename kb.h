@@ -35,8 +35,7 @@ unsigned int get_key();
 #define LSHIFT 0x2a
 #define RSHIFT 0x36
 
-unsigned int get_scancode();
+u16 scancode_to_ascii(u8 scancode);
 
-void isr_keyboard();
 
 #endif

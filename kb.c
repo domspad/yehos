@@ -2,7 +2,6 @@
 #include "kb.h"
 
 extern char START_BSS[], END_BSS[];
-u16 scancode_to_ascii(u8 scancode);
 
 
 

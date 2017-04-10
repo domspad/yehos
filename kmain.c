@@ -3,7 +3,6 @@
 #include "vgatext.h"
 
 extern char START_BSS[], END_BSS[];
-u16 scancode_to_ascii(u8 scancode);
 void setup_interrupts(void *idtaddr);
 
 void
@@ -28,18 +27,5 @@ kmain(void)
 
     vga_putc('>', 0x04);
 
-    while(1){
-        while(!((c = in8(0x64)) & 0x01)){}
-        u8 scancode = in8(0x60);
-        val = scancode_to_ascii(scancode);
-
-        if(val == 0) continue;
-
-        vga_putc(val, 0x07);
-
-        if(val == '`') {
-            vga_putc(val/0, 0x07);
-        }
-	}
 
 }

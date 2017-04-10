@@ -1,6 +1,7 @@
 #include "asmhelpers.h"
 #include "memlib.h"
 #include "vgatext.h"
+#include "kb.h"
 
 #define NUM_INTERRUPTS 64
 
@@ -19,13 +20,24 @@ void isr_timer(){
     vga_setchar(79, 0, timer_chars[timer_index%4], 0x03);
     timer_index ++;
 }
+
+void isr_keyboard() {
+        u8 scancode = in8(0x60);
+        u16 val;
+        val = scancode_to_ascii(scancode);
+
+        if(val == 0) return;
+
+        vga_putc(val, 0x07);
+}
+
 void irq_handler(u32 irq)
 {
     /*vga_putc(irq + '0', 0x03);*/
 //    vga_setchar(irq, 24, irq + '0', 0x03);
     switch (irq) {
         case 0: isr_timer(); break;
-//    case 1: isr_keyboard(); break;
+        case 1: isr_keyboard(); break;
     default:
 //            kprintf("Unhandled IRQ%d\r\n", irq);
             break;
