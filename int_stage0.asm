@@ -2,11 +2,13 @@
 
 global exc_stage0_start, exc_stage0_fixup, exc_stage0_end
 global excerr_stage0_start, excerr_stage0_fixup, excerr_stage0_end
+global irq_stage0_start, irq_stage0_fixup, irq_stage0_end
 global asm_halt
 
-extern exception_handler
+extern exception_handler, irq_handler
 
 exc_handler_ptr dd exception_handler
+irq_handler_ptr dd irq_handler
 
 asm_halt:
     hlt
@@ -40,6 +42,31 @@ exception_end:
     pop eax
     popad
     pop eax
+    iret
+
+
+irq_stage0_start:
+    pushad                     ; save all registers
+irq_stage0_fixup:
+    mov eax, 0
+    push eax                   ; arg1 = IRQ #
+    push irq_end
+    jmp [irq_handler_ptr]      ; irq_handler(irq#, ...)
+irq_stage0_end equ $
+
+global irq_end
+irq_end:
+    pop eax
+    cmp al, 8                  ; ACK IRQ0-7 on master only
+    jb master_irq_end
+
+    mov al, 0x20
+    out 0xA0, al               ; EOI to slave PIC
+
+master_irq_end:
+    mov al, 0x20
+    out 0x20, al               ; EOI to master PIC
+    popad
     iret
 
 

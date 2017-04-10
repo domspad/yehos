@@ -12,6 +12,13 @@ vga_putc(u8 ch, u8 color)
 }
 
 void
+vga_setchar(int x, int y, u8 ch, u8 color)
+{
+    videomem[y*160+x*2] = ch;
+    videomem[y*160+x*2+1] = color;
+}
+
+void
 vga_cls(void)
 {
     int j;

@@ -10,6 +10,19 @@
  * stage 0 handlers at 0x1200 + MAX_S0_LEN*intnum
  */
 
+void irq_handler(u32 irq)
+{
+    vga_putc(irq + '0', 0x03);
+//    vga_setchar(irq, 24, irq + '0', 0x03);
+    switch (irq) {
+//    case 0: isr_timer(); break;
+//    case 1: isr_keyboard(); break;
+    default:
+//            kprintf("Unhandled IRQ%d\r\n", irq);
+            break;
+    };
+}
+
 void exception_handler(u32 exc, u32 errcode,
                u32 edi, u32 esi, u32 ebp, u32 esp,
                u32 ebx, u32 edx, u32 ecx, u32 new_eax,
@@ -50,7 +63,7 @@ void exception_handler(u32 exc, u32 errcode,
 
 #define MAX_S0_LEN 32
 
-//extern u32 irq_stage0_start, irq_stage0_fixup, irq_stage0_end;
+extern u32 irq_stage0_start, irq_stage0_fixup, irq_stage0_end;
 extern u32 exc_stage0_start, exc_stage0_fixup, exc_stage0_end;
 extern u32 excerr_stage0_start, excerr_stage0_fixup, excerr_stage0_end;
 //extern u32 syscall_stage0_start, syscall_stage0_fixup, syscall_stage0_end;
@@ -111,7 +124,6 @@ create_idt(u32 *idt) // and also stage0 interrupt stubs after the IDT
                                          &exc_stage0_end,
                                          i);
         }
-#if 0
         else if (i < 0x30) // irq
         {
             create_handler(handler_addr, &irq_stage0_start,
@@ -119,6 +131,7 @@ create_idt(u32 *idt) // and also stage0 interrupt stubs after the IDT
                                          &irq_stage0_end,
                                          i - 0x20);
         }
+#if 0
         else // syscall
         {
             create_handler(handler_addr, &syscall_stage0_start,
@@ -131,7 +144,6 @@ create_idt(u32 *idt) // and also stage0 interrupt stubs after the IDT
     }
 }
 
-#if 0
 void
 setup_pic(u8 master_int, u8 slave_int)
 {
@@ -147,13 +159,12 @@ setup_pic(u8 master_int, u8 slave_int)
     out8(0xA1, 0x01);        // ICW4: manual EOI
     out8(0xA1, 0x0);         // OCW1: unmask all ints
 }
-#endif
 
 void
 setup_interrupts(void *idtaddr)
 {
     // set up 8259 PIC for hardware interrupts at 0x20/0x28
-//    setup_pic(0x20, 0x28);
+    setup_pic(0x20, 0x28);
 
     // create IDT and handlers
     create_idt(idtaddr);
@@ -162,5 +173,5 @@ setup_interrupts(void *idtaddr)
     lidt(idtaddr, 8*NUM_INTERRUPTS-1);
 
     // enable interrupts on processor
-//    asm volatile ("sti");
+    asm volatile ("sti");
 }
