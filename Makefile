@@ -8,8 +8,9 @@ CFLAGS += -nostdinc
 CFLAGS += -nostartfiles
 CFLAGS += -nodefaultlibs
 CFLAGS += -fno-strict-aliasing
+CFLAGS += -std=gnu99
 
-KERNEL_OBJS= kb.o vgatext.o exceptions.o int_stage0.o memcpy.o
+KERNEL_OBJS= kb.o vgatext.o exceptions.o int_stage0.o memlib.o
 
 all: yehos.img
 

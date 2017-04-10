@@ -1,4 +1,5 @@
 #include "asmhelpers.h"
+#include "memlib.h"
 
 #define NUM_INTERRUPTS 64
 
@@ -109,7 +110,7 @@ create_idt(u32 *idt) // and also stage0 interrupt stubs after the IDT
             set_idt_entry(&idt[i*2], handler_addr);
         }
 
-        if (i == 8 || i == 10 || i == 11 || i == 12 || 
+        if (i == 8 || i == 10 || i == 11 || i == 12 ||
                       i == 13 || i == 14 || i == 17)    // with errcode
         {
             create_handler(handler_addr, &excerr_stage0_start,
