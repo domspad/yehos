@@ -4,6 +4,12 @@ typedef unsigned long u32;
 
 #define DONT_EMIT extern inline __attribute__ ((gnu_inline, always_inline))
 
+// in a exception handler
+struct exc_registers {
+    u32 unused_eax, ecx, edx, ebx, esp, ebp, esi, edi;
+    u32 eax, eflags, eip, cs;
+};
+
 DONT_EMIT void yield()
 {
     asm volatile ("hlt");

@@ -3,6 +3,9 @@
 
 extern char START_BSS[], END_BSS[];
 u16 scancode_to_ascii(u8 scancode);
+void vga_putc(u8 ch, u8 color);
+void vga_cls(void);
+void setup_interrupts(void *idtaddr);
 
 void
 kmain(void)
@@ -10,7 +13,7 @@ kmain(void)
 //    memset(START_BSS, 0, END_BSS - START_BSS);
     int index=0;
 
-    char *videomem = (char *) 0xb8000;
+
     char *keyboardmem = (char *) 0xfe00;
     char *statusport = (char *) 0x60;
     char *keyboard = (char *) 0x65;
@@ -20,13 +23,12 @@ kmain(void)
     //videomem[1] = in8(0xd4);
     // This is
     int j = 0;
-    char * video = videomem;
-    while(j < 0x06400){
-        video[j] = ' ';
-        video[j+1] = 0x00;
-        j++;
-        j++;
-    }
+
+    setup_interrupts((void *) 0x1000);
+    vga_cls();
+
+    vga_putc('>', 0x04);
+
     while(1){
         while(!((c = in8(0x64)) & 0x01)){}
         u8 scancode = in8(0x60);
@@ -34,9 +36,11 @@ kmain(void)
 
         if(val == 0) continue;
 
-        videomem[index*2] = val;
-        videomem[index*2+0x01] = 0x07;
-        index++;
+        vga_putc(val, 0x07);
+
+        if(val == '`') {
+            vga_putc(val/0, 0x07);
+        }
 	}
 
 }
