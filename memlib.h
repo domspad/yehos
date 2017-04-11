@@ -3,6 +3,7 @@
 
 
 void * memcpy(void *_dest, const void *_src, int n);
+void * memset(void *_dest, int val, int length);
 
 
 #endif

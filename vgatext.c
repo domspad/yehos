@@ -22,11 +22,5 @@ vga_setchar(int x, int y, u8 ch, u8 color)
 void
 vga_cls(void)
 {
-    int j;
-    while(j < 0x06400) {
-        videomem[j] = ' ';
-        videomem[j+1] = 0x00;
-        j++;
-        j++;
-    }
+    memset((void *)videomem, 0x00, 0x06400);
 }
