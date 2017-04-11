@@ -24,6 +24,8 @@ kernel.bin: kmain.o kernel.ld $(KERNEL_OBJS)
 
 yehos.img: kernel.bin bootloader.bin
 	cat bootloader.bin kernel.bin > $@
+	truncate --size=4KB $@
+	cat vga/0000200.vga vga/0010000.vga >> $@
 	truncate --size=128KB $@
 
 .c.o:
