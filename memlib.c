@@ -1,4 +1,5 @@
 #include "asmhelpers.h"
+#include "memlib.h"
 
 void *
 memcpy(void *_dest, const void *_src, int n)

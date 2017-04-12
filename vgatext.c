@@ -1,5 +1,6 @@
 #include "asmhelpers.h"
 #include "vgatext.h"
+#include "memlib.h"
 
 static volatile char *videomem = (volatile char *) 0xb8000;
 void
