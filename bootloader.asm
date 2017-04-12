@@ -24,7 +24,7 @@ errstr db "error loading kernel", 0
 
 ; Disk Address Packet
 dap db 16, 0            ; [2] sizeof(dap)
-    dw 16               ; [2] transfer 16 sectors (before PVB)
+    dw 128               ; [2] transfer 16 sectors (before PVB)
     dw 0x8000, 0x0      ; [4] to 0:8000
     dd 1, 0             ; [8] from LBA 0
 

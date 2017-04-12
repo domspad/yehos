@@ -8,6 +8,7 @@
 
 static char timer_chars[4] = {'-','/','|','\\'};
 static int timer_index = 0;
+static int img_number = 0;
 
 /*
  * IDT at 0x1000
@@ -18,12 +19,14 @@ static int timer_index = 0;
  */
 
 void isr_timer(){
-    char *pic_index[2] = {(char *) 0x8da0,(char *) 0x9d40} ;
+    char *pic_index = (char *) 0x8da0;
 
     if( timer_index % 5 == 0) {
-        show_image(pic_index[timer_index%2], 4000);
+        show_image(pic_index+(img_number%15)*4000, 4000);
+        img_number++;
+        vga_setchar(79, 0, (char *) img_number+'0', 0x03);
     }
-    vga_setchar(79, 0, timer_chars[timer_index%4], 0x03);
+    /*vga_setchar(79, 0, timer_chars[timer_index%4], 0x03);*/
     timer_index ++;
 }
 
