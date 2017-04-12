@@ -9,6 +9,7 @@
 static char timer_chars[4] = {'-','/','|','\\'};
 static int timer_index = 0;
 static int img_number = 0;
+static int pause_set =  0;
 
 /*
  * IDT at 0x1000
@@ -21,7 +22,7 @@ static int img_number = 0;
 void isr_timer(){
     char *pic_index = (char *) 0x8da0;
 
-    if( timer_index % 5 == 0) {
+    if( timer_index % 5 == 0 && !pause_set) {
         show_image(pic_index+(img_number%15)*4000, 4000);
         img_number++;
         vga_setchar(79, 0, (char *) img_number+'0', 0x03);
@@ -34,6 +35,7 @@ void isr_keyboard() {
         u8 scancode = in8(0x60);
         u16 val;
         val = scancode_to_ascii(scancode);
+        if(val == ' ') pause_set = 1-pause_set;
 
         if(val == 0) return;
 
