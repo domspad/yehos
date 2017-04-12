@@ -2,6 +2,7 @@
 #include "memlib.h"
 #include "vgatext.h"
 #include "kb.h"
+#include "video.h"
 
 #define NUM_INTERRUPTS 64
 
@@ -17,6 +18,11 @@ static int timer_index = 0;
  */
 
 void isr_timer(){
+    char *pic_index[2] = {(char *) 0x8da0,(char *) 0x9d40} ;
+
+    if( timer_index % 5 == 0) {
+        show_image(pic_index[timer_index%2], 4000);
+    }
     vga_setchar(79, 0, timer_chars[timer_index%4], 0x03);
     timer_index ++;
 }

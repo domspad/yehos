@@ -2,6 +2,7 @@
 #include "kb.h"
 #include "vgatext.h"
 #include "memlib.h"
+#include "video.h"
 
 extern char START_BSS[], END_BSS[];
 void setup_interrupts(void *idtaddr);
@@ -25,12 +26,5 @@ kmain(void)
     vga_cls();
 
     vga_putc('>', 0x04);
-
-    char *pic_index = (char *) 0x8da0;
-    char *pic_index2 = (char *) 0x9d40;
-
-    memcpy(videomem, pic_index, 4000);
-
-    while(1){}
 
 }
