@@ -25,7 +25,7 @@ void isr_timer(){
     if( timer_index % 5 == 0 && !pause_set) {
         show_image(pic_index+(img_number%15)*4000, 4000);
         img_number++;
-        vga_setchar(79, 0, (char *) img_number+'0', 0x03);
+        vga_setchar(79, 0, (u8) img_number+'0', 0x03);
     }
     /*vga_setchar(79, 0, timer_chars[timer_index%4], 0x03);*/
     timer_index ++;
