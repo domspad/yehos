@@ -12,20 +12,23 @@ void show_image(char * pic_index, int size) {
 }
 
 char *pic_index = 0x0;
+volatile int seek = 0;
 
 void play_video(void) {
 
     int last_timer_index = timer_index;
-    int img_number = 0;
 
     while(1) {
         if (last_timer_index != timer_index) {
             last_timer_index = timer_index;
             if(!pause_set) {
-                show_image(pic_index+img_number*4000, 4000);
-                img_number++;
-                vga_setchar(79, 0, (u8) img_number+'0', 0x03);
+                show_image(pic_index+seek*4000, 4000);
+                seek++;
             }
+
+            // boundaries
+            if(seek < 0) seek = 0;
+            if (seek > 13460) seek=13460;
         }
     }
 

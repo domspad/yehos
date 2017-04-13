@@ -30,15 +30,26 @@ void isr_timer(){
 }
 
 volatile int pause_set =  0;
+volatile int seek;
 void isr_keyboard() {
         u8 scancode = in8(0x60);
         u16 val;
         val = scancode_to_ascii(scancode);
-        if(val == ' ') pause_set = 1-pause_set;
+        switch (val) {
+            case ' ':
+                pause_set = 1-pause_set;
+                return;
+            case 'l':
+                seek += 30*5; // 30 frames/sec -> 5 sec seek.
+                return;
+            case 'h':
+                seek -= 30*5;
+                return;
+            case 0:
+                return;
+        }
 
-        if(val == 0) return;
-
-        vga_putc(val, 0x07);
+        //vga_putc(val, 0x07);
 }
 
 void irq_handler(u32 irq)
