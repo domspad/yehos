@@ -1,2 +1,7 @@
 *.bin
 *.sw[p|o]
+*.iso
+*.elf
+*.lst
+isopatcher
+vga/starwars.vga
