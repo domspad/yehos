@@ -29,7 +29,7 @@ void isr_timer(){
     timer_index++;
 }
 
-volatile int pause_set =  0;
+volatile int pause_set =  1;
 volatile int seek;
 void isr_keyboard() {
         u8 scancode = in8(0x60);
