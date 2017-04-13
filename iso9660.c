@@ -5,6 +5,7 @@
 #include "DiskFile.h"
 #include "iso9660.h"
 #include "kprint.h"
+#include "kernel.h"
 
 DiskFile g_files[256];
 
@@ -29,7 +30,7 @@ DiskFile * iso9660_enumfiles(void *baseptr)
         fp->data = sector(baseptr, entry->data_sector);
         fp->length = entry->data_len;
 
-        DPRINT(1, "CD file: %s at 0x%x (%u bytes)",
+        printf("CD file: %s at 0x%x (%u bytes)\n",
                     fp->filename, fp->data, fp->length);
 
         entry = NEXT_DIR_ENTRY(entry);
@@ -53,11 +54,12 @@ iso9660_fopen_r(void *baseptr, const char *filename)
         DiskFile *df = &files[i];
         if (strncmp(df->filename, filename, sizeof(filename)) == 0)
         {
+            printf("found file '%s'\n", df->filename);
             return df;
         }
         else
         {
-            DPRINT(0, "skipping file '%s'", df->filename);
+            printf("skipping file '%s'\n", df->filename);
         }
     }
     return NULL;
