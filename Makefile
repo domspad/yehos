@@ -50,7 +50,7 @@ isopatcher: isopatcher.c iso9660.c iso9660.h
 %.o: %.asm
 	nasm $(ASMFLAGS) -f elf -o $@ $<
 
-run: yehos.iso
+run: yehos-patched.iso
 	qemu-system-i386 -cdrom $<
 
 clean:

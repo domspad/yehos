@@ -22,8 +22,8 @@ main(int argc, const char *argv[])
     DiskFile *kernel = iso9660_fopen_r(buf, "KERNEL.BIN");
     assert(kernel);
 
-    info.lba_kernel = ((int) kernel->data - (int) buf) / 512;
-    info.num_sects = kernel->length / 512 + 1;
+    info.lba_kernel = ((int) kernel->data - (int) buf) / 2048;
+    info.num_sects = kernel->length / 2048 + 1;
 
     assert(sizeof(info) == 4);
     fseek(fp, 0, SEEK_SET);
