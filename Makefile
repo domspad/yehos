@@ -10,12 +10,14 @@ CFLAGS += -nodefaultlibs
 CFLAGS += -fno-strict-aliasing
 CFLAGS += -std=gnu99
 
+ASMFLAGS += -w+orphan-labels
+
 KERNEL_OBJS= kb.o vgatext.o exceptions.o int_stage0.o memlib.o interrupts.o video.o
 
 all: yehos.img
 
 bootloader.bin: bootloader.asm
-	nasm -f bin -l bootloader.lst -o bootloader.bin bootloader.asm
+	nasm $(ASMFLAGS) -f bin -l bootloader.lst -o bootloader.bin bootloader.asm
 
 kernel.bin: kmain.o kernel.ld $(KERNEL_OBJS)
 	ld -m elf_i386 -T kernel.ld -o kernel.elf $(KERNEL_OBJS)
