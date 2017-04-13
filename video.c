@@ -19,6 +19,7 @@ void play_video(void) {
     int last_timer_index = timer_index;
 
     while(1) {
+        yield();
         if (last_timer_index != timer_index) {
             last_timer_index = timer_index;
             if(!pause_set) {
