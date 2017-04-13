@@ -269,7 +269,7 @@ extern ata_disk disks[];
 int init_ata();
 int ata_identify_device(ata_disk *disk, IDENTIFY_DEVICE_DATA *id);
 int ata_read_lba28(ata_disk *disk, u8 *buf, u16 buflen, u32 lba);
-int atapi_read_lba(ata_disk *d, u8 *buf, u16 buflen, u32 lba);
+int atapi_read_lba(ata_disk *d, u8 *buf, u16 buflen, u32 lba, u16 nsectors);
 int atapi_get_capacity(ata_disk *d);
 
 #endif

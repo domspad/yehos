@@ -1,5 +1,7 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <errno.h>
 #include "DiskFile.h"
 #include "iso9660.h"
 
@@ -22,7 +24,7 @@ main(int argc, const char *argv[])
     DiskFile *kernel = iso9660_fopen_r(buf, "KERNEL.BIN");
     assert(kernel);
 
-    info.lba_kernel = ((int) kernel->data - (int) buf) / 2048;
+    info.lba_kernel = ((uint64_t) kernel->data - (uint64_t) buf) / 2048;
     info.num_sects = kernel->length / 2048 + 1;
 
     assert(sizeof(info) == 4);

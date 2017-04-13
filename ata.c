@@ -459,10 +459,10 @@ ata_read_lba28(ata_disk *d, u8 *buf, u16 buflen, u32 lba)
 }
 
 int
-atapi_read_lba(ata_disk *d, u8 *buf, u16 buflen, u32 lba)
+atapi_read_lba(ata_disk *d, u8 *buf, u16 buflen, u32 lba, u16 nsectors)
 {
     const u8 atapi_cmd_pkt[12] = { SCSI_CMD_READ, 0, lba >> 24, lba >> 16, lba >> 8, lba,
-                                  0, 0, 0, 1 /* sectors */, 0, 0 };
+                                  0, 0, 0, nsectors, 0, 0 };
 
     if (atapi_packet(d, (void *) atapi_cmd_pkt, sizeof(atapi_cmd_pkt), (void *) buf, buflen))
     {
