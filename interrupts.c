@@ -19,8 +19,9 @@ static int pause_set =  0;
  * stage 0 handlers at 0x1200 + MAX_S0_LEN*intnum
  */
 
+char *pic_index = 0x0;
+
 void isr_timer(){
-    char *pic_index = (char *) 0x8da0;
 
     if( timer_index % 5 == 0 && !pause_set) {
         show_image(pic_index+(img_number%15)*4000, 4000);

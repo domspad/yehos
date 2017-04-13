@@ -1,8 +1,21 @@
-typedef unsigned char u8;
-typedef unsigned short u16;
-typedef unsigned long u32;
+#ifndef ASMHELPERS_H
+#define ASMHELPERS_H
+
+#include "ourtypes.h"
+
+#define PACKED __attribute__((packed))
 
 #define DONT_EMIT extern inline __attribute__ ((gnu_inline, always_inline))
+
+#define HTONL(n) (((((unsigned long)(n) & 0xFF)) << 24) | \
+                  ((((unsigned long)(n) & 0xFF00)) << 8) | \
+                  ((((unsigned long)(n) & 0xFF0000)) >> 8) | \
+                  ((((unsigned long)(n) & 0xFF000000)) >> 24))
+
+#define NTOHL(n) (((((unsigned long)(n) & 0xFF)) << 24) | \
+                  ((((unsigned long)(n) & 0xFF00)) << 8) | \
+                  ((((unsigned long)(n) & 0xFF0000)) >> 8) | \
+                  ((((unsigned long)(n) & 0xFF000000)) >> 24))
 
 // in a exception handler
 struct exc_registers {
@@ -55,3 +68,5 @@ in32(unsigned int port)
    asm volatile ("inl %%dx,%%eax":"=a" (ret):"d" (port));
    return ret;
 }
+
+#endif

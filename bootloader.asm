@@ -24,9 +24,9 @@ errstr db "error loading kernel", 0
 
 ; Disk Address Packet
 dap db 16, 0            ; [2] sizeof(dap)
-    dw 128               ; [2] transfer 16 sectors (before PVB)
-    dw 0x8000, 0x0      ; [4] to 0:8000
-    dd 1, 0             ; [8] from LBA 0
+dap_num_sects    dw 1                ; [2] transfer 1 sectors (before PVB)
+dap_addr   dw 0x4000, 0x0      ; [4] to 0:4000
+dap_lba    dd 0, 0             ; [8] from LBA 0
 
 start:
     xor ax, ax
@@ -41,7 +41,7 @@ start:
     mov si, banner
     call writestr
 
-    ; read sectors from disk
+    ; read first sector from disk
     mov si, dap
     mov dl, [boot_drive]
     mov ah, 0x42
@@ -54,7 +54,21 @@ readerr:
     hlt
 
 readok:
+    ; at 0x4000 is kernel sector lba (u16)
+    ; at 0x4002 is number of kernel sectors (u16)
+    ; read kernel from disk
+    mov ax, [0x4002]
+    mov [dap_num_sects], ax
+    mov ax, [0x4000]
+    mov [dap_lba], ax
+    mov ax, 0x8000
+    mov [dap_addr], ax
 
+    mov si, dap
+    mov dl, [boot_drive]
+    mov ah, 0x42
+    int 0x13
+    jc readerr
 
 leap:
     call enable_A20
