@@ -19,7 +19,7 @@ bi_len  dd 0            ; len of boot file
 bi_csum dd 0
 bi_reserved times 10 dd 0
 
-banner db 10, "SP/OS (2013) Saul Pwanson", 13, 10, 0
+banner db 10, "RC/OS (2017) RC Bootcamp", 13, 10, 0
 errstr db "error loading kernel", 0
 
 ; Disk Address Packet
