@@ -4,7 +4,6 @@
 #include <string.h>
 #include "DiskFile.h"
 #include "iso9660.h"
-#include "kprint.h"
 #include "kernel.h"
 
 DiskFile g_files[256];

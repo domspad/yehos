@@ -1,8 +1,7 @@
-//#include <sys/types.h>
 #include "assert.h"
 #include "asmhelpers.h"
 #include "ata.h"
-#include "kprint.h"
+#include "kernel.h"
 
 #define USE_DMA 0
 
@@ -236,7 +235,7 @@ int ata_status_notbusy(ata_disk *d)
 {
     u8 st = ata_in8(d, CB_ALT_STATUS);
     int ntries;
-    for (ntries=0; ntries < 1000; ntries++)
+    for (ntries=0; ntries < 10000; ntries++)
     {
         u8 status = ata_in8(d, CB_ALT_STATUS);
         if (status & CB_STATUS_ERR)
@@ -244,6 +243,7 @@ int ata_status_notbusy(ata_disk *d)
 
         if ((status & CB_STATUS_BUSY) == 0)
             return 0;
+        DELAY400NS;
     }
     ata_error(d, "timeout");
     return -1;
@@ -397,8 +397,10 @@ int atapi_packet(ata_disk *d,
         u16 nbytes = (ata_in8(d, CB_LBA3) << 8) | ata_in8(d, CB_LBA2);
         assert(nbytes <= outbufsize);
         assert(nbytes > 0);
-        DPRINT(3, "atapi recving %d bytes", nbytes);
+//        DPRINT(3, "atapi recving %d bytes", nbytes);
         ata_ins16(d, outbuf, nbytes);
+        outbuf += nbytes;
+        outbufsize -= nbytes;
 
         // BUG: receives into the same buffer until !DRQ
         //   so buffer better be big enough

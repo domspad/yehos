@@ -9,6 +9,7 @@
 
 extern char START_BSS[], END_BSS[];
 void setup_interrupts(void *idtaddr);
+void setup_timer(int timer_hz);
 
 static volatile char *videomem = (volatile char *) 0xb8000;
 extern char *pic_index;
@@ -23,13 +24,22 @@ kmain(void)
     init_ata();
     ata_disk *d = &disks[0];
 
+    kprintf("#LBA on disk 0 = %d\n", d->max_lba);
+
     // read entire .iso into memory at the 1MB mark
-    for (uint32_t i=0; i < 256; i++)
-        atapi_read_lba(d, (void *) (0x100000 + i*2048), 0xFFFF, i, 1); //d->max_lba);
+    for (uint32_t i=0; i < d->max_lba; i++) {
+        char *diskbuf = (void *) 0x90000;
+        while (atapi_read_lba(d, diskbuf, 0xFFFF, i, 1) < 0) {
+            kprintf("timeout on sector %d\n", i);
+        }
+        memcpy((void *) (0x100000 + i*2048), diskbuf, 2048);
+        vga_putc('.', 0x07);
+    }
 
-    DiskFile * df = iso9660_fopen_r((void *) 0x100000, "SW78.VGA");
-    pic_index = df->data;
-
+    DiskFile * df = iso9660_fopen_r((void *) 0x100000, "STARWARS.VGA");
+    pic_index = df->data + 4000*200;
+    setup_timer(100);
     setup_interrupts((void *) 0x1000);
+
     vga_putc('>', 0x07);
 }
