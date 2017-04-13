@@ -10,11 +10,14 @@ vga_putc(u8 ch, u8 color)
 
     if (ch == '\n') {
         index = (index / 160) * 160 + 160;
-        return;
+    } else {
+        videomem[index*2] = ch;
+        videomem[index*2+0x01] = color;
+        index++;
     }
-    videomem[index*2] = ch;
-    videomem[index*2+0x01] = color;
-    index++;
+    if (index > 4000) {
+        index = 0;
+    }
 }
 
 void

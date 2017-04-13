@@ -21,6 +21,16 @@ static int pause_set =  0;
 
 char *pic_index = 0x0;
 
+void setup_timer(int timer_hz)
+{
+    int divisor = 1193180 / timer_hz;
+    out8(0x43, 0x36);             // Counter0, LSB then MSB, square wave
+    out8(0x40, divisor & 0xFF);   // send LSB
+    out8(0x40, divisor >> 8);     // send MSB
+}
+
+
+
 void isr_timer(){
 
     if( timer_index % 5 == 0 && !pause_set) {
