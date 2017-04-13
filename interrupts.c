@@ -3,13 +3,11 @@
 #include "vgatext.h"
 #include "kb.h"
 #include "video.h"
+#include "globals.h"
 
 #define NUM_INTERRUPTS 64
 
-static char timer_chars[4] = {'-','/','|','\\'};
-static int timer_index = 0;
-static int img_number = 0;
-static int pause_set =  0;
+volatile int timer_index = 0;
 
 /*
  * IDT at 0x1000
@@ -19,8 +17,6 @@ static int pause_set =  0;
  * stage 0 handlers at 0x1200 + MAX_S0_LEN*intnum
  */
 
-char *pic_index = 0x0;
-
 void setup_timer(int timer_hz)
 {
     int divisor = 1193180 / timer_hz;
@@ -29,19 +25,11 @@ void setup_timer(int timer_hz)
     out8(0x40, divisor >> 8);     // send MSB
 }
 
-
-
 void isr_timer(){
-
-    if( timer_index % 5 == 0 && !pause_set) {
-        show_image(pic_index+(img_number%15)*4000, 4000);
-        img_number++;
-        vga_setchar(79, 0, (u8) img_number+'0', 0x03);
-    }
-    /*vga_setchar(79, 0, timer_chars[timer_index%4], 0x03);*/
-    timer_index ++;
+    timer_index++;
 }
 
+volatile int pause_set =  0;
 void isr_keyboard() {
         u8 scancode = in8(0x60);
         u16 val;

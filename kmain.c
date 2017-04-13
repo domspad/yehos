@@ -17,7 +17,7 @@ extern char *pic_index;
 void
 kmain(void)
 {
-//    memset(START_BSS, 0, END_BSS - START_BSS);
+    memset(START_BSS, 0, END_BSS - START_BSS);
 
     vga_cls();
     kprintf("sizeof(uint32_t)=%d, sizeof(uint64_t)=%d\n", sizeof(uint32_t), sizeof(uint64_t));
@@ -38,8 +38,8 @@ kmain(void)
 
     DiskFile * df = iso9660_fopen_r((void *) 0x100000, "STARWARS.VGA");
     pic_index = df->data + 4000*200;
-    setup_timer(100);
+    setup_timer(30);
     setup_interrupts((void *) 0x1000);
 
-    vga_putc('>', 0x07);
+    play_video();
 }
