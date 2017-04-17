@@ -1,5 +1,7 @@
 #include "asmhelpers.h"
 #include "memlib.h"
+#include "kernel.h"
+#include "debug.h"
 
 void exception_handler(u32 exc, u32 errcode,
                u32 edi, u32 esi, u32 ebp, u32 esp,
@@ -9,7 +11,7 @@ void exception_handler(u32 exc, u32 errcode,
     struct exc_registers *regs = (struct exc_registers *) &errcode;
 
     switch (exc) {
-        case 0:  // divide-by-zero
+        case 0: // divide-by-zero
         case 1:  // debug
         case 2:  // nmi
         case 3:  // breakpoint
@@ -31,9 +33,8 @@ void exception_handler(u32 exc, u32 errcode,
         case 19: // simd fpe
         default:
             {
-                volatile char *vmem = (char *) (0xb8000 + 160*23 + 158);
-                vmem[0] = '!';
-                vmem[1] = 0x04;
+                kprintf("\n\nKERNEL PANIC! This might help: ");
+                dump_regs(regs);
                 while (1) yield();
             }
     };
