@@ -1,5 +1,5 @@
 *.bin
-*.sw[p|o|n|m|l]
+*.s[a-w][a-z]
 *.iso
 *.elf
 *.lst
