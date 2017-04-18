@@ -51,7 +51,7 @@ kmain(void)
 
     kprintf("got here\n");
 
-    uint32_t *foo = (uint32_t *) 0x400000;
+    uint32_t *foo = (uint32_t *) 0x100000;
 
     *foo = 0xdeadbeef;
     while (1) yield();

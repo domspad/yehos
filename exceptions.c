@@ -2,16 +2,8 @@
 #include "memlib.h"
 #include "kernel.h"
 #include "debug.h"
+#include "virtualmem.h"
 
-physaddr_t g_nextPage = 0x100000;
-
-physaddr_t
-get_unused_page()
-{
-    physaddr_t ret = g_nextPage;
-    g_nextPage += 0x1000;
-    return ret;
-}
 
 void exception_handler(u32 exc, u32 errcode,
                u32 edi, u32 esi, u32 ebp, u32 esp,
@@ -37,15 +29,8 @@ void exception_handler(u32 exc, u32 errcode,
         case 13: // GPF
         case 14: // page fault
         {
-            uint32_t pfaddr = get_cr2();
-            kprintf("page fault at 0x%x", pfaddr);
-            uint32_t *ptable = (uint32_t *) 0xffc00000;
-            if (ptable[pfaddr >> 12] != 0xFFFFFFF0) {
-                physaddr_t page = get_unused_page();
-                ptable[pfaddr >> 12] = page | 0x3;
-                kprintf(", replacing with phys page at %x\n", pfaddr, page);
-                break;
-            }
+          handle_page_fault();
+          break;
         }
 
         case 16: // x87 fpe
