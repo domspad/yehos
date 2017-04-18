@@ -69,4 +69,26 @@ in32(unsigned int port)
    return ret;
 }
 
+DONT_EMIT u32
+get_cr2()
+{
+    u32 __force_order;
+    u32 val;
+    asm volatile("mov %%cr2,%0\n\t" : "=r" (val), "=m" (__force_order));
+    return val;
+}
+
+DONT_EMIT void
+set_cr0_paging(void)
+{
+    asm volatile ("movl %cr0, %eax; orl $0x80000000, %eax; movl %eax, %cr0;");
+}
+
+typedef uint32_t physaddr_t;
+DONT_EMIT void
+set_cr3(physaddr_t ptable)
+{
+    asm volatile ("movl %%eax, %%cr3" :: "a" (ptable));
+}
+
 #endif
