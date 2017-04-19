@@ -26,42 +26,16 @@ kmain(void)
 
     setup_interrupts((void *) 0x1000);
     setup_paging();
-    kprintf("got here\n");
-
-    uint32_t *foo = (uint32_t *) 0x100000;
-
-    /* *foo = 0xdeadbeef; */
 
     init_ata();
     ata_disk *d = &disks[0];
-
-    kprintf("#LBA on disk 0 = %d\n", d->max_lba);
-
     mmap_iso(d);
-
-    while (1) yield();
-
-
-#if 0
-    init_ata();
-    ata_disk *d = &disks[0];
-
-    kprintf("#LBA on disk 0 = %d\n", d->max_lba);
-
-    // read entire .iso into memory at the 1MB mark
-    for (uint32_t i=0; i < d->max_lba; i++) {
-        char *diskbuf = (void *) 0x90000;
-        while (atapi_read_lba(d, diskbuf, 0xFFFF, i, 1) < 0) {
-            kprintf("timeout on sector %d\n", i);
-        }
-        memcpy((void *) (0x100000 + i*2048), diskbuf, 2048);
-        vga_putc('.', 0x07);
-    }
 
     DiskFile * df = iso9660_fopen_r((void *) 0x100000, "STARWARS.VGA");
     pic_index = df->data + 4000*200;
     setup_timer(30);
-
     play_video();
-#endif
+
+    while (1) yield();
+
 }

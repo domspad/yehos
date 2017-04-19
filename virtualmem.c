@@ -11,22 +11,22 @@ physaddr_t g_nextPage = 0x100000;
 void
 setup_paging()
 {
-  uint32_t *pagedir = (void *) PAGEDIR_ADDR;
-  memset(pagedir, 0, 4096);
-  pagedir[0] = PT0_ADDR | PRESENT_AND_RW;
-  pagedir[1023] = PAGEDIR_ADDR | PRESENT_AND_RW;
+    uint32_t *pagedir = (void *) PAGEDIR_ADDR;
+    memset(pagedir, 0, 4096);
+    pagedir[0] = PT0_ADDR | PRESENT_AND_RW;
+    pagedir[1023] = PAGEDIR_ADDR | PRESENT_AND_RW;
 
-  uint32_t *pt0 = (void *) PT0_ADDR;
-  memset(pt0, 0, 4096);
+    uint32_t *pt0 = (void *) PT0_ADDR;
+    memset(pt0, 0, 4096);
 
-  // identity-map first 1MB
-  for (unsigned int i=0; i<256; ++i) {
-      pt0[i] = (i << 12) | PRESENT_AND_RW;
-  }
+    // identity-map first 1MB
+    for (unsigned int i=0; i<256; ++i) {
+        pt0[i] = (i << 12) | PRESENT_AND_RW;
+    }
 
-  set_cr3(PAGEDIR_ADDR);
+    set_cr3(PAGEDIR_ADDR);
 
-  set_cr0_paging();
+    set_cr0_paging();
 }
 
 physaddr_t
@@ -42,10 +42,20 @@ handle_page_fault()
 {
     uint32_t pfaddr = get_cr2();
     uint32_t *ptable = (uint32_t *) 0xffc00000;
-    physaddr_t page = get_unused_page();
-    ptable[pfaddr >> 12] = page | PRESENT_AND_RW;
-    kprintf("Page fault at 0x%x, replacing with phys page at 0x%x\n", pfaddr, page);
+    uint32_t ptable_entry = ptable[pfaddr >> 12];
 
+    if ((ptable_entry >> 28) == 4) {
+        uint32_t lba = (ptable_entry - 0x40000000) >> 4;
+        physaddr_t page = get_unused_page();
+        ptable[pfaddr >> 12] = page | PRESENT_AND_RW;
+        ata_disk *d = &disks[0];
+        char *diskbuf = (void *) 0x90000;
+        atapi_read_lba(d, diskbuf, 0xFFFF, lba, 2);
+        memcpy((void *) (0x100000 + lba * d->sector_size), diskbuf, d->sector_size*2);
+    } else {
+        physaddr_t page = get_unused_page();
+        ptable[pfaddr >> 12] = page | PRESENT_AND_RW;
+    }
 }
 
 void
