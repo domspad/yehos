@@ -6,6 +6,7 @@
 #include "ata.h"
 #include "DiskFile.h"
 #include "kernel.h"
+#include "virtualmem.h"
 
 extern char START_BSS[], END_BSS[];
 void setup_interrupts(void *idtaddr);
@@ -13,9 +14,6 @@ void setup_timer(int timer_hz);
 
 static volatile char *videomem = (volatile char *) 0xb8000;
 extern char *pic_index;
-
-#define PAGEDIR_ADDR 0x80000
-#define PT0_ADDR 0x81000
 
 void
 kmain(void)
@@ -27,28 +25,7 @@ kmain(void)
     kprintf("sizeof(uint32_t)=%d, sizeof(uint64_t)=%d\n", sizeof(uint32_t), sizeof(uint64_t));
 
     setup_interrupts((void *) 0x1000);
-
-    // set up paging
-
-    uint32_t *pagedir = (void *) PAGEDIR_ADDR;
-    memset(pagedir, 0, 4096);
-    pagedir[0] = PT0_ADDR | 0x03;
-    pagedir[1023] = PAGEDIR_ADDR | 0x03;
-
-    uint32_t *pt0 = (void *) PT0_ADDR;
-    memset(pt0, 0, 4096);
-
-    // identity-map first 1MB
-    for (unsigned int i=0; i<256; ++i) {
-        pt0[i] = (i << 12) | 0x03;
-    }
-
-//    pt0[7] = 0xFFFFFFF0;
-
-    set_cr3(PAGEDIR_ADDR);
-
-    set_cr0_paging();
-
+    setup_paging();
     kprintf("got here\n");
 
     uint32_t *foo = (uint32_t *) 0x100000;
