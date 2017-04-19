@@ -44,17 +44,17 @@ handle_page_fault()
     uint32_t *ptable = (uint32_t *) 0xffc00000;
     uint32_t ptable_entry = ptable[pfaddr >> 12];
 
+    physaddr_t page = get_unused_page();
+    ptable[pfaddr >> 12] = page | PRESENT_AND_RW;
+
     if ((ptable_entry >> 28) == 4) {
         uint32_t lba = (ptable_entry - 0x40000000) >> 4;
-        physaddr_t page = get_unused_page();
-        ptable[pfaddr >> 12] = page | PRESENT_AND_RW;
         ata_disk *d = &disks[0];
         char *diskbuf = (void *) 0x90000;
-        atapi_read_lba(d, diskbuf, 0xFFFF, lba, 2);
-        memcpy((void *) (0x100000 + lba * d->sector_size), diskbuf, d->sector_size*2);
-    } else {
-        physaddr_t page = get_unused_page();
-        ptable[pfaddr >> 12] = page | PRESENT_AND_RW;
+        while (atapi_read_lba(d, diskbuf, 0xFFFF, lba, 2) < 0) {
+            kprintf("timeout on sector %d\n", lba);
+        }
+        memcpy((void *) (pfaddr & 0xfffff000), diskbuf, d->sector_size*2);
     }
 }
 
@@ -62,13 +62,13 @@ void
 mmap_iso(ata_disk *d) {
     uint32_t iso_page_start = 0x100;
     uint32_t page_size = 0x1000;
-    uint32_t no_of_pages = d->max_lba * d->sector_size / page_size + 1;
+    uint32_t npages = d->max_lba * d->sector_size / page_size + 1;
 
     uint32_t iso_page_end = iso_page_start + d->max_lba/3;
 
-    for (uint32_t i=0; i < no_of_pages; i++) {
+    for (uint32_t i=0; i < npages; i++) {
         uint32_t *ptable = (uint32_t *) 0xffc00000;
         uint32_t lba = i * page_size / d->sector_size;
-        ptable[i + iso_page_start] = 0x40000000 + (lba << 4); // 0x4[addr]0
+        ptable[i + iso_page_start] = 0x40000000 + (lba << 4); // 0x4[lba]0
     }
 }
