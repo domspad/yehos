@@ -30,8 +30,17 @@ kmain(void)
 
     uint32_t *foo = (uint32_t *) 0x100000;
 
-    *foo = 0xdeadbeef;
+    /* *foo = 0xdeadbeef; */
+
+    init_ata();
+    ata_disk *d = &disks[0];
+
+    kprintf("#LBA on disk 0 = %d\n", d->max_lba);
+
+    mmap_iso(d);
+
     while (1) yield();
+
 
 #if 0
     init_ata();

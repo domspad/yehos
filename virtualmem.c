@@ -1,5 +1,6 @@
 #include "kernel.h"
 #include "asmhelpers.h"
+#include "ata.h"
 
 #define PAGEDIR_ADDR 0x80000
 #define PT0_ADDR 0x81000
@@ -44,4 +45,20 @@ handle_page_fault()
   physaddr_t page = get_unused_page();
   ptable[pfaddr >> 12] = page | PRESENT_AND_RW;
   kprintf("Page fault at 0x%x, replacing with phys page at 0x%x\n", pfaddr, page);
+
+}
+
+void
+mmap_iso(ata_disk *d) {
+  uint32_t iso_page_start = 0x100;
+  uint32_t page_size = 0x1000;
+  uint32_t no_of_pages = d->max_lba * d->sector_size / page_size + 1;
+
+  uint32_t iso_page_end = iso_page_start + d->max_lba/3;
+
+  for (uint32_t i=0; i < no_of_pages; i++) {
+    uint32_t *ptable = (uint32_t *) 0xffc00000;
+    uint32_t lba = i * page_size / d->sector_size;
+    ptable[i + iso_page_start] = 0x40000000 + (lba << 4); // 0x4[addr]0
+  }
 }
