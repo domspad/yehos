@@ -48,6 +48,7 @@ handle_page_fault()
     ptable[pfaddr >> 12] = page | PRESENT_AND_RW;
 
     if ((ptable_entry >> 28) == 4) {
+        // "Use the fours"
         uint32_t lba = (ptable_entry - 0x40000000) >> 4;
         ata_disk *d = &disks[0];
         char *diskbuf = (void *) 0x90000;
