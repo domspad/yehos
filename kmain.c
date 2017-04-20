@@ -12,9 +12,6 @@ extern char START_BSS[], END_BSS[];
 void setup_interrupts(void *idtaddr);
 void setup_timer(int timer_hz);
 
-static volatile char *videomem = (volatile char *) 0xb8000;
-extern char *pic_index;
-
 void
 kmain(void)
 {
@@ -32,9 +29,8 @@ kmain(void)
     mmap_disk(d);
 
     DiskFile * df = iso9660_fopen_r((void *) 0x100000, "STARWARS.VGA");
-    pic_index = df->data + 4000*200;
     setup_timer(30);
-    play_video();
+    play_video(df->data + 4000 * 200);
 
     while (1) yield();
 

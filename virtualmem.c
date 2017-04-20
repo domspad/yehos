@@ -5,8 +5,11 @@
 #define PAGEDIR_ADDR 0x80000
 #define PT0_ADDR 0x81000
 #define PRESENT_AND_RW 0x03
+#define PTABLE_ADDR 0xffc00000
+#define DISK_MEMORY_ADDR_FLAG 0x40000000
 
 physaddr_t g_nextPage = 0x100000;
+uint32_t *ptable = (uint32_t *) 0xffc00000;
 
 void
 setup_paging()
@@ -41,7 +44,6 @@ void
 handle_page_fault()
 {
     uint32_t pfaddr = get_cr2();
-    uint32_t *ptable = (uint32_t *) 0xffc00000;
     uint32_t ptable_entry = ptable[pfaddr >> 12];
 
     physaddr_t page = get_unused_page();
@@ -49,7 +51,7 @@ handle_page_fault()
 
     if ((ptable_entry >> 28) == 4) {
         // "Use the fours"
-        uint32_t lba = (ptable_entry - 0x40000000) >> 4;
+        uint32_t lba = (ptable_entry - DISK_MEMORY_ADDR_FLAG) >> 4;
         ata_disk *d = &disks[0];
         char *diskbuf = (void *) 0x90000;
         while (atapi_read_lba(d, diskbuf, 0xFFFF, lba, 2) < 0) {
@@ -65,11 +67,8 @@ mmap_disk(ata_disk *d) {
     uint32_t page_size = 0x1000;
     uint32_t npages = d->max_lba * d->sector_size / page_size + 1;
 
-    uint32_t iso_page_end = iso_page_start + d->max_lba/3;
-
-    for (uint32_t i=0; i < npages; i++) {
-        uint32_t *ptable = (uint32_t *) 0xffc00000;
+    for (uint32_t i = 0; i < npages; i++) {
         uint32_t lba = i * page_size / d->sector_size;
-        ptable[i + iso_page_start] = 0x40000000 + (lba << 4); // 0x4[lba]0
+        ptable[i + iso_page_start] = DISK_MEMORY_ADDR_FLAG + (lba << 4); // 0x4[lba]0
     }
 }
