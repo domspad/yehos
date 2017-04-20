@@ -29,7 +29,7 @@ kmain(void)
 
     init_ata();
     ata_disk *d = &disks[0];
-    mmap_iso(d);
+    mmap_disk(d);
 
     DiskFile * df = iso9660_fopen_r((void *) 0x100000, "STARWARS.VGA");
     pic_index = df->data + 4000*200;

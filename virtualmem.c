@@ -59,7 +59,7 @@ handle_page_fault()
 }
 
 void
-mmap_iso(ata_disk *d) {
+mmap_disk(ata_disk *d) {
     uint32_t iso_page_start = 0x100;
     uint32_t page_size = 0x1000;
     uint32_t npages = d->max_lba * d->sector_size / page_size + 1;

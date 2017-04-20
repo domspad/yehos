@@ -5,5 +5,5 @@
 
 void handle_page_fault(void);
 void setup_paging(void);
-void mmap_iso(ata_disk *d);
+void mmap_disk(ata_disk *d);
 #endif
