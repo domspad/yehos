@@ -11,10 +11,9 @@ void show_image(char * pic_index, int size) {
     memcpy((void *) videomem, pic_index, size);
 }
 
-char *pic_index = 0x0;
 volatile int seek = 0;
 
-void play_video(void) {
+void play_video(char * pic_index) {
 
     int last_timer_index = timer_index;
 
@@ -23,7 +22,7 @@ void play_video(void) {
         if (last_timer_index != timer_index) {
             last_timer_index = timer_index;
             if(!pause_set) {
-                show_image(pic_index+seek*4000, 4000);
+                show_image(pic_index + seek * 4000, 4000);
                 seek++;
             }
 
