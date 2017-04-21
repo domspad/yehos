@@ -51,7 +51,7 @@ handle_page_fault()
 
     if ((ptable_entry >> 28) == 4) {
         // "Use the fours"
-        uint32_t lba = (ptable_entry - DISK_MEMORY_ADDR_FLAG) >> 4;
+        uint32_t lba = (ptable_entry & ~(uint32_t) 0xF0000000) >> 4;
         ata_disk *d = &disks[0];
         char *diskbuf = (void *) 0x90000;
         while (atapi_read_lba(d, diskbuf, 0xFFFF, lba, 2) < 0) {
