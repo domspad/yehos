@@ -30,6 +30,7 @@ kmain(void)
 
     DiskFile * df = iso9660_fopen_r((void *) 0x100000, "STARWARS.VGA");
     setup_timer(30);
+    // why do we jump 800000 bytes into the data to start the video?
     play_video(df->data + 4000 * 200);
 
     while (1) yield();
