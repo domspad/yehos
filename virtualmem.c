@@ -49,6 +49,7 @@ handle_page_fault()
     physaddr_t page = get_unused_page();
     ptable[pfaddr >> 12] = page | PRESENT_AND_RW;
 
+    // test whether the ptable entry refers to the iso filesystem
     if ((ptable_entry >> 28) == 4) {
         // "Use the fours"
         uint32_t lba = (ptable_entry & ~(uint32_t) 0xF0000000) >> 4;
