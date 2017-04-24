@@ -1,17 +1,17 @@
 
-CFLAGS += -O1
-CFLAGS += -ggdb
-CFLAGS += -m32
-CFLAGS += -ffreestanding
-CFLAGS += -nostdlib
-CFLAGS += -nostdinc
-CFLAGS += -nostartfiles
-CFLAGS += -nodefaultlibs
-CFLAGS += -fno-strict-aliasing
-CFLAGS += -std=gnu99
-CFLAGS += -isystem .
+KERNEL_CFLAGS += -O1
+KERNEL_CFLAGS += -ggdb
+KERNEL_CFLAGS += -m32
+KERNEL_CFLAGS += -ffreestanding
+KERNEL_CFLAGS += -nostdlib
+KERNEL_CFLAGS += -nostdinc
+KERNEL_CFLAGS += -nostartfiles
+KERNEL_CFLAGS += -nodefaultlibs
+KERNEL_CFLAGS += -fno-strict-aliasing
+KERNEL_CFLAGS += -std=gnu99
+KERNEL_CFLAGS += -isystem .
 
-KERNEL_OBJS= kb.o vgatext.o exceptions.o int_stage0.o memlib.o interrupts.o video.o ata.o iso9660.o kprint.o debug.o virtualmem.o
+KERNEL_OBJS= kb.o vgatext.o exceptions.o syscalls.o int_stage0.o memlib.o interrupts.o video.o ata.o iso9660.o kprint.o debug.o virtualmem.o
 
 
 all: yehos-patched.iso
@@ -28,7 +28,7 @@ yehos-patched.iso: yehos.iso isopatcher
 	cp $< $@
 	./isopatcher $@ kernel.bin
 
-yehos.iso: kernel.bin bootloader.bin
+yehos.iso: kernel.bin bootloader.bin apps
 	mkisofs \
 		-r \
 		-iso-level 1 \
@@ -40,16 +40,20 @@ yehos.iso: kernel.bin bootloader.bin
 		-boot-load-size=1 \
 		-boot-info-table \
 		-input-charset=iso8859-1 \
-		-o $@ bootloader.bin kernel.bin vga/starwars.vga
+		-o $@ bootloader.bin kernel.bin vga/starwars.vga apps/hello.bin
 
 isopatcher: isopatcher.c iso9660.c iso9660.h
 	gcc -ggdb -o $@ $^
 
+# for kernel
 .c.o:
-	gcc -c $(CFLAGS) -o $@ $<
+	gcc -c $(KERNEL_CFLAGS) -o $@ $<
 
 %.o: %.asm
 	nasm $(ASMFLAGS) -f elf -o $@ $<
+
+apps:
+	make -C apps
 
 run: yehos-patched.iso
 	qemu-system-i386 -cdrom $<

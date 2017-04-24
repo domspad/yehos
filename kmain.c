@@ -12,6 +12,8 @@ extern char START_BSS[], END_BSS[];
 void setup_interrupts(void *idtaddr);
 void setup_timer(int timer_hz);
 
+typedef int (*mainptr_t)(int argc, char **argv);
+
 void
 kmain(void)
 {
@@ -27,10 +29,18 @@ kmain(void)
     init_ata();
     ata_disk *d = &disks[0];
     mmap_disk(d);
+
+    mmap("HELLO.BIN", 0x01000000);
+    kprintf("first byte: %d\n", *(char *)0x01000000);
+
+    mainptr_t entry = (mainptr_t) 0x01000000;
+    (*entry)(0, NULL);
+#if 0
     kprintf("got to here\n");
     mmap("STARWARS.VGA", 0x70000000);
     setup_timer(30);
     play_video(0x70000000 + 4000 * 200);
+#endif
 
     while (1) yield();
 

@@ -3,12 +3,14 @@
 global exc_stage0_start, exc_stage0_fixup, exc_stage0_end
 global excerr_stage0_start, excerr_stage0_fixup, excerr_stage0_end
 global irq_stage0_start, irq_stage0_fixup, irq_stage0_end
+global syscall_stage0_start, syscall_stage0_fixup, syscall_stage0_end
 global asm_halt
 
-extern exception_handler, irq_handler
+extern exception_handler, irq_handler, syscall_handler
 
 exc_handler_ptr dd exception_handler
 irq_handler_ptr dd irq_handler
+sys_handler_ptr dd syscall_handler
 
 asm_halt:
     hlt
@@ -69,5 +71,17 @@ master_irq_end:
     popad
     iret
 
-
+global syscall_stage0_start
+syscall_stage0_start:
+    mov eax, esp
+    add eax, 12                ; don't make eip, cs, eflags args
+    ; XXX: need to save other registers, or mark them as clobbered
+    push eax                   ; instead just pass u32* parms
+syscall_stage0_fixup:
+    mov eax, 0
+    push eax
+    call [sys_handler_ptr]     ; returns value in eax
+    add esp, 4                 ; drop u32* parms
+    iret
+syscall_stage0_end equ $
 

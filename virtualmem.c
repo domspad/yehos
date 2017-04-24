@@ -100,7 +100,7 @@ mmap(char *filename, uint32_t virt_addr){
         return -1;
     }
     first_lba = entry->data_sector;
-    num_lbas = entry->data_len / 2048;
+    num_lbas = entry->data_len / 2048 + 1;
     kprintf("%s at %x for %d sectors\n", filename, first_lba, num_lbas);
     // mmap the file to the given virt addr using "the fours" scheme.
     // (assumes ratio of sector size to page size is 1 : 2

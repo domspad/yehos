@@ -70,7 +70,7 @@ void irq_handler(u32 irq)
 extern u32 irq_stage0_start, irq_stage0_fixup, irq_stage0_end;
 extern u32 exc_stage0_start, exc_stage0_fixup, exc_stage0_end;
 extern u32 excerr_stage0_start, excerr_stage0_fixup, excerr_stage0_end;
-//extern u32 syscall_stage0_start, syscall_stage0_fixup, syscall_stage0_end;
+extern u32 syscall_stage0_start, syscall_stage0_fixup, syscall_stage0_end;
 extern u32 asm_halt;
 
 static void
@@ -135,7 +135,6 @@ create_idt(u32 *idt) // and also stage0 interrupt stubs after the IDT
                                          &irq_stage0_end,
                                          i - 0x20);
         }
-#if 0
         else // syscall
         {
             create_handler(handler_addr, &syscall_stage0_start,
@@ -143,7 +142,6 @@ create_idt(u32 *idt) // and also stage0 interrupt stubs after the IDT
                                          &syscall_stage0_end,
                                          i - 0x30);
         }
-#endif
         handler_addr += MAX_S0_LEN;
     }
 }
