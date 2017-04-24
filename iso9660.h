@@ -89,6 +89,8 @@ typedef struct PACKED PathTableEntry {
     // and then a padding byte if id_len is odd
 } PathTableEntry;
 
+
+const DirectoryRecord *get_first_entry(void *baseptr);
 #define NEXT_PATH_TABLE_ENTRY(E) \
     ((PathTableEntry *) (((u8 *) E) + sizeof(PathTableEntry) + E->id_len + (E->id_len & 0x1)))
 

@@ -1,6 +1,9 @@
 #include "kernel.h"
 #include "asmhelpers.h"
 #include "ata.h"
+#include "iso9660.h"
+#include "memlib.h"
+#include "virtualmem.h"
 
 #define PAGEDIR_ADDR 0x80000
 #define PT0_ADDR 0x81000
@@ -64,12 +67,44 @@ handle_page_fault()
 
 void
 mmap_disk(ata_disk *d) {
-    uint32_t iso_page_start = 0x100;
     uint32_t page_size = 0x1000;
     uint32_t npages = d->max_lba * d->sector_size / page_size + 1;
-
+    
     for (uint32_t i = 0; i < npages; i++) {
         uint32_t lba = i * page_size / d->sector_size;
-        ptable[i + iso_page_start] = DISK_MEMORY_ADDR_FLAG + (lba << 4); // 0x4[lba]0
+        uint32_t page_table_index = i + (ISO_START >> 12);
+        ptable[page_table_index] = DISK_MEMORY_ADDR_FLAG + (lba << 4); // 0x4[lba]0
     }
+}
+
+const DirectoryRecord *find_file(const char* filename){
+    
+    const DirectoryRecord *entry = get_first_entry((void*)(uint32_t)(ISO_START) ); 
+    while((entry->record_len > 0)){
+       if( strncmp(filename, entry->id, strlen(filename)) == 0) {
+            return entry;
+       }
+       entry = NEXT_DIR_ENTRY(entry);
+    }
+    return NULL;
+}
+
+int 
+mmap(char *filename, uint32_t virt_addr){
+    // using the mmaped iso, determine the first lba and size of file
+    uint32_t first_lba;
+    uint32_t num_lbas;
+    const DirectoryRecord *entry = find_file(filename);
+    if (entry == NULL){
+        kprintf("can't find %s\n", filename);
+        return -1;
+    }
+    first_lba = entry->data_sector;
+    num_lbas = entry->data_len / 2048;
+    kprintf("%s at %x for %d sectors\n", filename, first_lba, num_lbas);
+    // mmap the file to the given virt addr using "the fours" scheme.
+    // (assumes ratio of sector size to page size is 1 : 2
+    for(uint32_t lba = 0; lba < num_lbas; lba += 2)
+        ptable[(virt_addr >> 12) + lba/2] = DISK_MEMORY_ADDR_FLAG + ((first_lba + lba) << 4); //0x4[lba]0
+    return 0;
 }

@@ -1,12 +1,12 @@
 #include "asmhelpers.h"
 #include "kb.h"
 #include "vgatext.h"
-#include "memlib.h"
 #include "video.h"
 #include "ata.h"
 #include "DiskFile.h"
 #include "kernel.h"
 #include "virtualmem.h"
+#include "memlib.h"
 
 extern char START_BSS[], END_BSS[];
 void setup_interrupts(void *idtaddr);
@@ -27,10 +27,10 @@ kmain(void)
     init_ata();
     ata_disk *d = &disks[0];
     mmap_disk(d);
-
-    DiskFile * df = iso9660_fopen_r((void *) 0x100000, "STARWARS.VGA");
+    kprintf("got to here\n");
+    mmap("STARWARS.VGA", 0x70000000);
     setup_timer(30);
-    play_video(df->data + 4000 * 200);
+    play_video(0x70000000 + 4000 * 200);
 
     while (1) yield();
 
