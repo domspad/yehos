@@ -9,9 +9,11 @@ CFLAGS+=-fno-strict-aliasing
 
 all: hello.bin
 
+.SECONDARY: hello.o crt0.o hello.lst
+
 hello.elf: hello.o
 
-%.elf:
+%.elf: | crt0.o
 	ld -m elf_i386 -T linker.ld -o $@ $^
 
 %.lst: %.elf
@@ -25,3 +27,6 @@ hello.elf: hello.o
 
 .s.o:
 	nasm -f elf32 -o $@ $<
+
+clean:
+	rm -f *.o *.elf *.bin
