@@ -6,14 +6,20 @@ CFLAGS+=-nostdinc
 CFLAGS+=-nostartfiles
 CFLAGS+=-nodefaultlibs
 CFLAGS+=-fno-strict-aliasing
+CFLAGS+=-isystem ..
+CFLAGS+=-O2
+CFLAGS+=-ggdb
 
-all: hello.bin
+all: hello.bin txtplayr.bin
 
-.SECONDARY: hello.o crt0.o hello.lst
+.SECONDARY: hello.o crt0.o hello.lst txtplayr.lst
+
+
+txtplayr.elf: txtplayer.o video.o
 
 hello.elf: hello.o
 
-%.elf: | crt0.o
+%.elf: ../libyehos.o | crt0.o
 	ld -m elf_i386 -T linker.ld -o $@ $^
 
 %.lst: %.elf

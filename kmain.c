@@ -1,7 +1,6 @@
 #include "asmhelpers.h"
 #include "kb.h"
 #include "vgatext.h"
-#include "video.h"
 #include "ata.h"
 #include "DiskFile.h"
 #include "kernel.h"
@@ -30,17 +29,13 @@ kmain(void)
     ata_disk *d = &disks[0];
     mmap_disk(d);
 
-    mmap("HELLO.BIN", 0x01000000);
+    mmap("TXTPLAYR.BIN", 0x01000000);
     kprintf("first byte: %d\n", *(char *)0x01000000);
 
     mainptr_t entry = (mainptr_t) 0x01000000;
     (*entry)(0, NULL);
-#if 0
-    kprintf("got to here\n");
-    mmap("STARWARS.VGA", 0x70000000);
+    kprintf("kernel initialized\n");
     setup_timer(30);
-    play_video(0x70000000 + 4000 * 200);
-#endif
 
     while (1) yield();
 

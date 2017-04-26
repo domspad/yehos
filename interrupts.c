@@ -2,7 +2,6 @@
 #include "memlib.h"
 #include "vgatext.h"
 #include "kb.h"
-#include "video.h"
 #include "globals.h"
 
 #define NUM_INTERRUPTS 64
@@ -70,14 +69,16 @@ void irq_handler(u32 irq)
 extern u32 irq_stage0_start, irq_stage0_fixup, irq_stage0_end;
 extern u32 exc_stage0_start, exc_stage0_fixup, exc_stage0_end;
 extern u32 excerr_stage0_start, excerr_stage0_fixup, excerr_stage0_end;
-extern u32 syscall_stage0_start, syscall_stage0_fixup, syscall_stage0_end;
+extern u32 syscall_stage0_start, syscall_stage0_end;
 extern u32 asm_halt;
 
 static void
 create_handler(u8 *h, void *start, void *fixup, void *end, int intnum)
 {
     memcpy(h, (const void *) start, end - start);
-    h[fixup - start + 1] = intnum;
+    if (fixup) {
+        h[fixup - start + 1] = intnum;
+    }
 }
 
 static inline void
@@ -138,7 +139,7 @@ create_idt(u32 *idt) // and also stage0 interrupt stubs after the IDT
         else // syscall
         {
             create_handler(handler_addr, &syscall_stage0_start,
-                                         &syscall_stage0_fixup,
+                                         NULL,
                                          &syscall_stage0_end,
                                          i - 0x30);
         }

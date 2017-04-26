@@ -2,6 +2,7 @@
 extern main
 
 global _start
+global _exit
 _start:
     mov ebp, 0
     push ebp

@@ -11,7 +11,7 @@ KERNEL_CFLAGS += -fno-strict-aliasing
 KERNEL_CFLAGS += -std=gnu99
 KERNEL_CFLAGS += -isystem .
 
-KERNEL_OBJS= kb.o vgatext.o exceptions.o syscalls.o int_stage0.o memlib.o interrupts.o video.o ata.o iso9660.o kprint.o debug.o virtualmem.o
+KERNEL_OBJS= kb.o vgatext.o exceptions.o syscalls.o int_stage0.o memlib.o interrupts.o ata.o iso9660.o kprint.o debug.o virtualmem.o
 
 
 all: yehos-patched.iso
@@ -40,7 +40,7 @@ yehos.iso: kernel.bin bootloader.bin apps
 		-boot-load-size=1 \
 		-boot-info-table \
 		-input-charset=iso8859-1 \
-		-o $@ bootloader.bin kernel.bin vga/starwars.vga apps/hello.bin
+		-o $@ bootloader.bin kernel.bin vga/starwars.vga apps/hello.bin apps/txtplayr.bin
 
 isopatcher: isopatcher.c iso9660.c iso9660.h
 	gcc -ggdb -o $@ $^

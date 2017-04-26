@@ -1,5 +1,4 @@
 
-
 int
 main()
 {
@@ -7,5 +6,5 @@ main()
     videomem[0] = 'H';
     videomem[1] = 0x07;
 
-    return 0;
+    return 25;
 }

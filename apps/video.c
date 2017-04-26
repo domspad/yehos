@@ -1,9 +1,12 @@
-#include "memlib.h"
+
+#include <string.h>
+#if 0
 #include "ourtypes.h"
 #include "vgatext.h"
 #include "kernel.h"
 #include "asmhelpers.h"
 #include "globals.h"
+#endif
 
 static volatile char *videomem = (volatile char *) 0xb8000;
 
@@ -15,9 +18,12 @@ volatile int seek = 0;
 
 void play_video(char * pic_index) {
 
+    show_image(pic_index, 4000);
+#if 0
     int last_timer_index = timer_index;
 
     while(1) {
+//        usleep(300000);
         yield();
         if (last_timer_index != timer_index) {
             last_timer_index = timer_index;
@@ -31,6 +37,6 @@ void play_video(char * pic_index) {
             if (seek > 13460) seek=13460;
         }
     }
-
+#endif
 
 }
