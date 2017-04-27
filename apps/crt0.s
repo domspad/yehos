@@ -15,6 +15,7 @@ _start:
 
 ; already on the stack as a parameter is the exit code
 _exit:
+    add esp, 4 ; drop return address
     mov eax, 0
     int 30h   ; syscall 0 == exit
 
