@@ -21,7 +21,7 @@ syscall_handler(int syscall_num, const void *parms)
     case 1: // mmap
         {
             const int32_t *pParms = (const int32_t *) parms;
-            int r = do_mmap(pParms[1], pParms[0]);
+            int r = do_mmap(pParms[0], pParms[1]);
             if (r < 0) {
                 return -1;
             } else {

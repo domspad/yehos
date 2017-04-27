@@ -9,6 +9,7 @@ mmap(void *addr, int length, int prot, int flags,
                   "pushl %2\n"
                   "mov $1, %%eax\n"
                   "int $0x30\n"
+                  "add $8, %%esp\n"
                     : "=a" (ret)
                     : "r" (addr), "r" (filename)
                     : "memory");

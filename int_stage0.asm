@@ -75,12 +75,12 @@ global syscall_stage0_start
 syscall_stage0_start:
     push ebx
     mov ebx, esp
-    add ebx, 20                ; don't make eip, cs, eflags args
+    add ebx, 16                ; don't make eip, cs, eflags args
     ; XXX: need to save other registers, or mark them as clobbered
     push ebx                   ; instead just pass u32* parms
     push eax
     call [sys_handler_ptr]     ; returns value in eax
-    add esp, 4                 ; drop u32* parms
+    add esp, 8                 ; drop u32* parms
     pop ebx
     iret
 syscall_stage0_end equ $
