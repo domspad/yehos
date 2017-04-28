@@ -15,11 +15,14 @@ void
 write(char c);
 
 void
-writechar(int x, int y, char c, char color);
+writechar(int x, int y, int c, int color);
 
 void
 setcursor(int x, int y);
 
 int
 readline(char *buffer); // buffer is assumed to have READLINE_BUFFER_SIZE
+
+void
+clear_screen();
 #endif

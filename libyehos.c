@@ -77,3 +77,13 @@ writechar(int x, int y, char c, char color)
             : "memory");
     return;
 }
+
+void clear_screen() {
+    int col, row;
+    for (row = 0; row < 25; row++) {
+        for (col = 0; col < 80; col++){
+            writechar(col, row, ' ', 0xf);
+        }
+    }
+}
+
