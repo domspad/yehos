@@ -66,7 +66,7 @@ syscall_handler(int syscall_num, const void *parms)
             const int32_t *pParms = (const int32_t *) parms;
             int y = (int) pParms[0];
             int x = (int) pParms[1];
-            u8 position = x + y*80;
+            u16 position = x + y*80;
 
             // cursor LOW port to vga INDEX register
             out8(0x3D4, 0x0F);
