@@ -120,6 +120,18 @@ ASM_ROT:
 		sub esp, 4
 		jmp NEXT
 
+; ( a - )
+; alternate syntax for dd DROP_ASM
+DROP dd $+4
+		pop ebx
+		jmp NEXT
+
+; ( a b - b )
+NIP dd ENTER, SWAP, DROP, EXIT
+
+; ( a b - b a b )
+TUCK dd ENTER, SWAP, OVER, EXIT
+
 init:
 		dd DOLITERAL
 		dd 10
@@ -129,8 +141,7 @@ init:
 		dd 2
 		dd DOLITERAL
 		dd 3
-		dd ROT
-		dd PRINT
+		dd DROP
 		dd PRINT
 		dd PRINT
 		dd PRINT
