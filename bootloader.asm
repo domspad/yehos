@@ -1,15 +1,25 @@
 ; compile with nasm, use as disk image to qemu-system-i386
+;; note this uses x86 assembly intel syntax (so `mov dest, src`)
 
-[BITS 16]
-[ORG 0x7c00]
+[BITS 16]     ;; assembler directive telling nasm to generate code for processor running
+              ;; in 16-bit mode.
+[ORG 0x7c00]  ;; start the "location counter" (i.e. set origin) to 0x7c00,
+              ;; which is the typical location that the BIOS loads the boot sector
+              ;; (i.e. this code, which is generally found at the first sector on a HDD.
 
-boot_drive equ $
+boot_drive equ $ ;; similar to C's #DEFINE: sets label 'boot_drive' to the location of this line
+                 ;; in the resulting code file after assembling (assembly-time calculation)
 
-entry:
-    cli
-    jmp 0x0000:start
+entry:                 ;; note the <label>: syntax makes the <label> refer to the memory locationcontaining the instruction on the following line.
+    cli                ;; clear interrupt flag (disable interrupts)
+    jmp 0x0000:start   ;; jump to location defined by this segment address. 
+                       ;; this is translated to a 20-bit linear address (i.e. physical)
+                       ;; by shifting segment 4 bits << and adding to offset (here, 'start')
+                       ;; this sets CS:IP to these values. This jumps over the next couple data 
+                       ;; sections to the actual code.
 
-    times (8 - $ + entry) db 0   ; pad until boot-info-table
+    times (8 - $ + entry) db 0   ; pad until boot-info-table (where did this formulat come from?
+                                 ;; this places 0's in the bytes following this instruction a certain number of times.
 
 ; don't bother with making el torito load the kernel image
 iso_boot_info:
@@ -19,7 +29,8 @@ bi_len  dd 0            ; len of boot file
 bi_csum dd 0
 bi_reserved times 10 dd 0
 
-banner db 10, "SP/OS (2013) Saul Pwanson", 13, 10, 0
+banner db 10, "SP/OS (2013) Saul Pwanson", 13, 10, 0  ;; 'banner' now refers to memory location 
+                                                      ;; of the first byte, 10, in this following sequence. (note that it ends with an ascii \r\n\0
 errstr db "error loading kernel", 0
 
 ; Disk Address Packet
@@ -32,13 +43,17 @@ start:
     xor ax, ax
     mov ds, ax
     mov es, ax
-    mov ss, ax
-    mov sp, 0x7c00      ; setup stack just before the code
+    mov ss, ax          ;; clear out all segment registers
+    mov sp, 0x7c00      ; setup stack just before the code (recall stack grows towards 0x0)
 
-    mov [boot_drive], dl
+    mov [boot_drive], dl ;; save off boot_drive (? moves content of lower 8-bits of dx register
+                         ;; into the location referenced by boot_drive) 
+                         ;; The saves off the drive that the bootloader was loaded in from,
+                         ;; (set up by the BIOS), useful if you want to read more in from disk.
+                         ;; see https://en.wikibooks.org/wiki/X86_Assembly/Bootloaders
 
     ; display banner
-    mov si, banner
+    mov si, banner       ;; moves 
     call writestr
 
     ; read first sector from disk
