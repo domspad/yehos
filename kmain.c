@@ -31,10 +31,11 @@ kmain(void)
 
     mmap("FORTH.BIN", 0x01000000);
 
+    vga_cls();
+
     mainptr_t entry = (mainptr_t) 0x01000000;
     (*entry)(0, NULL);
     kprintf("kernel initialized\n");
-    setup_timer(30);
 
     while (1) yield();
 
