@@ -7,7 +7,7 @@ CFLAGS+=-nostartfiles
 CFLAGS+=-nodefaultlibs
 CFLAGS+=-fno-strict-aliasing
 CFLAGS+=-isystem ..
-CFLAGS+=-O2
+CFLAGS+=-O1
 CFLAGS+=-ggdb
 
 UNAME_S := $(shell uname -s)
