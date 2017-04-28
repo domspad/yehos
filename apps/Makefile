@@ -45,7 +45,7 @@ hello.elf: hello.o
 	$(OBJCOPY) -O binary $< $@
 
 .c.o:
-	$(CC) -c $(CFLAGS) -o $@ $<
+	$(CROSS_CC) -c $(CFLAGS) -o $@ $<
 
 .s.o:
 	nasm -f elf32 -o $@ $<
