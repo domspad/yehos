@@ -49,12 +49,12 @@ yehos.iso: kernel.bin bootloader.bin apps
 		-r \
 		-iso-level 1 \
 		-no-pad \
-		-b bootloader.bin \
-		-c boot.cat \
-		-no-emul-boot \
 		-boot-load-seg=0x7c0 \
 		-boot-load-size=1 \
 		-boot-info-table \
+		-b bootloader.bin \
+		-c boot.cat \
+		-no-emul-boot \
 		-input-charset=iso8859-1 \
 		-o $@ bootloader.bin kernel.bin vga/starwars.vga apps/hello.bin apps/txtplayr.bin
 
