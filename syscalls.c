@@ -61,7 +61,23 @@ syscall_handler(int syscall_num, const void *parms)
 
             return;
         }
-    case 4: // writechar
+    case 4: // setcursor
+        {
+            const int32_t *pParms = (const int32_t *) parms;
+            int y = (int) pParms[0];
+            int x = (int) pParms[1];
+            u8 position = x + y*80;
+
+            // cursor LOW port to vga INDEX register
+            out8(0x3D4, 0x0F);
+            out8(0x3D5, (unsigned char)(position&0xFF));
+            // cursor HIGH port to vga INDEX register
+            out8(0x3D4, 0x0E);
+            out8(0x3D5, (unsigned char )((position>>8)&0xFF));
+
+            return;
+        }
+    case 5: // writechar
         {
             char *videomem = (char *) VIDEO_MEM;
 

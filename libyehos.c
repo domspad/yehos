@@ -46,6 +46,22 @@ write(char c)
 
 
 void
+setcursor(int x, int y)
+{
+    asm volatile(
+            "pushl %0\n"
+            "pushl %1\n"
+            "mov $4, %%eax\n"
+            "int $0x30\n"
+            "add $8, %%esp\n"
+            :
+            : "r" ((int32_t) x), "r" ((int32_t) y)
+            : "memory");
+    return;
+}
+
+
+void
 writechar(int x, int y, char c, char color)
 {
     asm volatile(
@@ -53,7 +69,7 @@ writechar(int x, int y, char c, char color)
             "pushl %1\n"
             "pushl %2\n"
             "pushl %3\n"
-            "mov $4, %%eax\n"
+            "mov $5, %%eax\n"
             "int $0x30\n"
             "add $16, %%esp\n"
             :
