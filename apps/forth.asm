@@ -46,6 +46,7 @@ ASM_BYE:
 
 DOLITERAL:
 		dd ASM_DOLITERAL
+		dd "DOLITERAL"
 
 ASM_DOLITERAL:
 		push ebx
@@ -132,6 +133,29 @@ NIP dd ENTER, SWAP, DROP, EXIT
 ; ( a b - b a b )
 TUCK dd ENTER, SWAP, OVER, EXIT
 
+; >r (a - R: a)
+PUSHR dd $+4
+		mov [edx], ebx
+		add edx, 4
+		pop ebx
+		jmp NEXT
+
+; r> ( R: a - a )
+POPR dd $+4
+		push ebx
+		sub edx, 4 ; edx point at the top of the stack (which is empty)
+							 ; we need to reference the most recently pushed item
+		mov ebx, [edx]
+		jmp NEXT
+
+; r@ ( R: a - a R: a )
+PEEKR dd $+4
+		push ebx
+		sub edx, 4
+		mov ebx, [edx]
+		add edx, 4
+		jmp NEXT
+
 init:
 		dd DOLITERAL
 		dd 10
@@ -141,8 +165,9 @@ init:
 		dd 2
 		dd DOLITERAL
 		dd 3
-		dd DROP
+		dd PUSHR
+		dd PEEKR
 		dd PRINT
-		dd PRINT
+		dd POPR
 		dd PRINT
 		dd BYE
