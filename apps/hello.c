@@ -1,10 +1,14 @@
+#include <yehos.h>
 
 int
 main()
 {
-    char *videomem = (char *) 0xb8000;
-    videomem[0] = 'H';
-    videomem[1] = 0x07;
-
+    int vid_index = 0;
+    while(1){
+        int a = read();
+        if(a > 0){
+            write(a);
+        }
+    }
     return 25;
 }

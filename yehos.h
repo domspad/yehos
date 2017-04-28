@@ -10,4 +10,6 @@ mmap(void *addr, int length, int prot, int flags,
 char
 read();
 
+void
+write(char c);
 #endif

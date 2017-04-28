@@ -11,6 +11,8 @@ int read_keyboard_index = 0;
 int write_keyboard_index = 0;
 int keyboard_buffer_full = 0;
 
+int video_mem_index = 0;
+
 int
 syscall_handler(int syscall_num, const void *parms)
 {
@@ -38,7 +40,6 @@ syscall_handler(int syscall_num, const void *parms)
         {
             // check if buffer empty
             if (!keyboard_buffer_full && read_keyboard_index == write_keyboard_index){
-                kprintf("nothing in buffer yo\n");
                 return -1;
             } else {
                 keyboard_buffer_full = 0;
@@ -50,7 +51,14 @@ syscall_handler(int syscall_num, const void *parms)
         }
     case 3: // write
         {
+            char *videomem = (char *) VIDEO_MEM;
 
+            const int32_t *pParms = (const int32_t *) parms;
+            videomem[video_mem_index] = (char) pParms[0];
+            videomem[video_mem_index+1] = 0x0F;
+            video_mem_index = video_mem_index + 2;
+
+            return;
         }
     default:
         kprintf("system call %d not supported\n", syscall_num);

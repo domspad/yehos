@@ -29,7 +29,7 @@ kmain(void)
     ata_disk *d = &disks[0];
     mmap_disk(d);
 
-    mmap("TXTPLAYR.BIN", 0x01000000);
+    mmap("HELLO.BIN", 0x01000000);
     kprintf("first byte: %d\n", *(char *)0x01000000);
 
     mainptr_t entry = (mainptr_t) 0x01000000;

@@ -14,4 +14,7 @@ extern int read_keyboard_index;
 extern int write_keyboard_index;
 extern int keyboard_buffer_full;
 
+#define VIDEO_MEM 0xb8000
+extern int video_mem_index;
+
 #endif

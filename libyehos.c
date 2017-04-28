@@ -30,3 +30,16 @@ read()
                  : "memory");
     return (char) ret;
 }
+
+void
+write(char c)
+{
+    asm volatile("pushl %0\n"
+                 "mov $3, %%eax\n"
+                 "int $0x30\n"
+                 "add $4, %%esp\n"
+                   :
+                   : "r" ((int32_t) c)
+                   : "memory");
+    return;
+}
