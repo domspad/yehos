@@ -12,4 +12,7 @@ read();
 
 void
 write(char c);
+
+void
+writechar(int x, int y, char c, char color);
 #endif

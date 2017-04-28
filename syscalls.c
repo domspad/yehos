@@ -7,6 +7,7 @@
 #define do_mmap mmap
 
 char KEYBOARD_BUFFER[MAX_KEYBOARD_BUFF];
+int SCREEN_WIDTH = 80 * 2;
 int read_keyboard_index = 0;
 int write_keyboard_index = 0;
 int keyboard_buffer_full = 0;
@@ -57,6 +58,21 @@ syscall_handler(int syscall_num, const void *parms)
             videomem[video_mem_index] = (char) pParms[0];
             videomem[video_mem_index+1] = 0x0F;
             video_mem_index = video_mem_index + 2;
+
+            return;
+        }
+    case 4: // writechar
+        {
+            char *videomem = (char *) VIDEO_MEM;
+
+            const int32_t *pParms = (const int32_t *) parms;
+            char color = (char) pParms[0];
+            char c = (char) pParms[1];
+            int y = (int) pParms[2];
+            int x = (int) pParms[3];
+            int index = x * 2 + y * SCREEN_WIDTH;
+            videomem[index] = c;
+            videomem[index+1] = color;
 
             return;
         }

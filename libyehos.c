@@ -43,3 +43,21 @@ write(char c)
                    : "memory");
     return;
 }
+
+
+void
+writechar(int x, int y, char c, char color)
+{
+    asm volatile(
+            "pushl %0\n"
+            "pushl %1\n"
+            "pushl %2\n"
+            "pushl %3\n"
+            "mov $4, %%eax\n"
+            "int $0x30\n"
+            "add $16, %%esp\n"
+            :
+            : "r" ((int32_t) x), "r" ((int32_t) y), "r" ((int32_t) c), "r" ((int32_t) color)
+            : "memory");
+    return;
+}
