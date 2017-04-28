@@ -57,9 +57,11 @@ PRINT:
 		dd ASM_PRINT
 
 ASM_PRINT:
-		push ebx
+		push ebx ; move TOS to top of system stack
+						 ; so that it will be considered a param by c_print num
 		call c_print_num
-		pop ebx
+		pop ebx  ; get rid of param from system stack
+		pop ebx  ; pop the forth stack, print consumes arg
 		jmp NEXT
 
 DUP:
@@ -82,9 +84,23 @@ SQUARED:
 		dd ENTER
 		dd DUP, STAR, EXIT
 
+; ( a b - a b a )
+OVER:
+		dd ASM_OVER
+
+ASM_OVER:
+		mov eax, [esp]
+		push ebx
+		mov ebx, eax
+		jmp NEXT
+
 init:
 		dd DOLITERAL
 		dd 42
-		dd SQUARED
+		dd DOLITERAL
+		dd 53
+		dd OVER
+		dd PRINT
+		dd PRINT
 		dd PRINT
 		dd BYE
