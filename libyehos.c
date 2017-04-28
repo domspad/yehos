@@ -18,3 +18,15 @@ mmap(void *addr, int length, int prot, int flags,
 }
 
 #include "memlib.c"
+
+char
+read()
+{
+    int32_t ret;
+    asm volatile("mov $2, %%eax\n"
+                 "int $0x30\n"
+                 : "=a" (ret)
+                 :
+                 : "memory");
+    return (char) ret;
+}

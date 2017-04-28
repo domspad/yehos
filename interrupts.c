@@ -31,24 +31,22 @@ void isr_timer(){
 volatile int pause_set =  1;
 volatile int seek;
 void isr_keyboard() {
-        u8 scancode = in8(0x60);
-        u16 val;
-        val = scancode_to_ascii(scancode);
-        switch (val) {
-            case ' ':
-                pause_set = 1-pause_set;
-                return;
-            case 'l':
-                seek += 30*5; // 30 frames/sec -> 5 sec seek.
-                return;
-            case 'h':
-                seek -= 30*5;
-                return;
-            case 0:
-                return;
-        }
+        // check if buffer full
 
-        //vga_putc(val, 0x07);
+        if (keyboard_buffer_full) {
+            kprintf("buffer full yo\n");
+        } else {
+            u8 scancode = in8(0x60);
+            u16 val = scancode_to_ascii(scancode);
+            KEYBOARD_BUFFER[write_keyboard_index] = val;
+
+            write_keyboard_index++;
+            write_keyboard_index = write_keyboard_index % MAX_KEYBOARD_BUFF;
+            if (write_keyboard_index == read_keyboard_index) {
+                keyboard_buffer_full = 1;
+            }
+        }
+        return;
 }
 
 void irq_handler(u32 irq)

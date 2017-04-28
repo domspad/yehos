@@ -1,9 +1,15 @@
 #include "kernel.h"
 #include "asmhelpers.h"
 #include "virtualmem.h"
+#include "globals.h"
 
 // BEWARE
 #define do_mmap mmap
+
+char KEYBOARD_BUFFER[MAX_KEYBOARD_BUFF];
+int read_keyboard_index = 0;
+int write_keyboard_index = 0;
+int keyboard_buffer_full = 0;
 
 int
 syscall_handler(int syscall_num, const void *parms)
@@ -27,6 +33,24 @@ syscall_handler(int syscall_num, const void *parms)
             } else {
                 return pParms[1];
             }
+        }
+    case 2: // read
+        {
+            // check if buffer empty
+            if (!keyboard_buffer_full && read_keyboard_index == write_keyboard_index){
+                kprintf("nothing in buffer yo\n");
+                return -1;
+            } else {
+                keyboard_buffer_full = 0;
+                char ret = KEYBOARD_BUFFER[read_keyboard_index++];
+
+                read_keyboard_index = read_keyboard_index % MAX_KEYBOARD_BUFF;
+                return ret;
+            }
+        }
+    case 3: // write
+        {
+
         }
     default:
         kprintf("system call %d not supported\n", syscall_num);

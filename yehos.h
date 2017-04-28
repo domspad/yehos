@@ -7,4 +7,7 @@ void *
 mmap(void *addr, int length, int prot, int flags,
      const char *filename, int offset);
 
+char
+read();
+
 #endif
