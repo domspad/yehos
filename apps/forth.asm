@@ -94,12 +94,43 @@ ASM_OVER:
 		mov ebx, eax
 		jmp NEXT
 
+; ( a b - b a )
+SWAP:
+		dd ASM_SWAP
+
+ASM_SWAP:
+		pop eax
+		push ebx
+		mov ebx, eax
+		jmp NEXT
+
+; ( a b c - b c a )
+ROT:
+		dd ASM_ROT
+
+ASM_ROT:
+		mov eax, ebx
+		pop ebx
+		push eax
+
+		mov eax, ebx
+		add esp, 4
+		pop ebx ; a is correct position
+		push eax ; c is in correct position
+		sub esp, 4
+		jmp NEXT
+
 init:
 		dd DOLITERAL
-		dd 42
+		dd 10
 		dd DOLITERAL
-		dd 53
-		dd OVER
+		dd 1
+		dd DOLITERAL
+		dd 2
+		dd DOLITERAL
+		dd 3
+		dd ROT
+		dd PRINT
 		dd PRINT
 		dd PRINT
 		dd PRINT
