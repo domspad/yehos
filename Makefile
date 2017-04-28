@@ -40,7 +40,7 @@ yehos.iso: kernel.bin bootloader.bin apps
 		-boot-load-size=1 \
 		-boot-info-table \
 		-input-charset=iso8859-1 \
-		-o $@ bootloader.bin kernel.bin vga/starwars.vga apps/hello.bin apps/txtplayr.bin
+		-o $@ bootloader.bin kernel.bin vga/starwars.vga apps/hello.bin apps/txtplayr.bin apps/forth.bin
 
 isopatcher: isopatcher.c iso9660.c iso9660.h
 	gcc -ggdb -o $@ $^

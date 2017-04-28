@@ -10,17 +10,20 @@ CFLAGS+=-isystem ..
 CFLAGS+=-O2
 CFLAGS+=-ggdb
 
-all: hello.bin txtplayr.bin
+all: hello.bin txtplayr.bin forth.bin
 
 .SECONDARY: hello.o crt0.o hello.lst txtplayr.lst
 
-
+forth.elf: forth.o forthprint.o
 txtplayr.elf: txtplayer.o video.o
 
 hello.elf: hello.o
 
 %.elf: ../libyehos.o | crt0.o
 	ld -m elf_i386 -T linker.ld -o $@ $^
+
+%.o: %.asm
+	nasm $(ASMFLAGS) -f elf -o $@ $<
 
 %.lst: %.elf
 	objdump -d $< > $@
