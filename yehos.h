@@ -18,6 +18,9 @@ void
 writechar(int x, int y, int c, int color);
 
 void
+scroll();
+
+void
 setcursor(int x, int y);
 
 int

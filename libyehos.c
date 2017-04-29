@@ -64,7 +64,6 @@ setcursor(int x, int y)
     return;
 }
 
-
 void
 writechar(int x, int y, char c, char color)
 {
@@ -82,6 +81,17 @@ writechar(int x, int y, char c, char color)
     return;
 }
 
+void
+scroll()
+{
+    asm volatile(
+            "mov $6, %%eax\n"
+            "int $0x30\n"
+            :
+            );
+    return;
+}
+
 void clear_screen() {
     int col, row;
     for (row = 0; row < 25; row++) {
@@ -92,7 +102,11 @@ void clear_screen() {
 }
 
 void _readline_cursor_next_line() {
-    readline_cursor_row++;
+    if (readline_cursor_row < 24) {
+        readline_cursor_row++;
+    } else {
+        scroll();
+    }
     readline_cursor_col = 0;
     setcursor(readline_cursor_col, readline_cursor_row);
 }
@@ -100,8 +114,7 @@ void _readline_cursor_next_line() {
 void _readline_cursor_next() {
     readline_cursor_col++;
     if (readline_cursor_col >= READLINE_SCREEN_WIDTH) {
-        readline_cursor_row++;
-        readline_cursor_col = 0;
+        _readline_cursor_next_line();
     }
     setcursor(readline_cursor_col, readline_cursor_row);
 }

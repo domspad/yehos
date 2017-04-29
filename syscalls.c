@@ -2,12 +2,14 @@
 #include "asmhelpers.h"
 #include "virtualmem.h"
 #include "globals.h"
+#include "memlib.h"
 
 // BEWARE
 #define do_mmap mmap
+#define SCREEN_WIDTH 80
+#define SCREEN_LINE_SIZE (SCREEN_WIDTH * 2)
 
 char KEYBOARD_BUFFER[MAX_KEYBOARD_BUFF];
-int SCREEN_WIDTH = 80 * 2;
 int read_keyboard_index = 0;
 int write_keyboard_index = 0;
 int keyboard_buffer_full = 0;
@@ -86,9 +88,20 @@ syscall_handler(int syscall_num, const void *parms)
             char c = (char) pParms[1];
             int y = (int) pParms[2];
             int x = (int) pParms[3];
-            int index = x * 2 + y * SCREEN_WIDTH;
+            int index = x * 2 + y * SCREEN_LINE_SIZE;
             videomem[index] = c;
             videomem[index+1] = color;
+
+            return;
+        }
+    case 6: // scroll
+        {
+            char *videomem = (char *) VIDEO_MEM;
+            memmove(videomem, videomem + SCREEN_LINE_SIZE, 24 * SCREEN_LINE_SIZE);
+            for (int i = 0; i < 80; i++) {
+                videomem[i * 2 + 24 * SCREEN_LINE_SIZE] = ' ';
+                videomem[i * 2 + 24 * SCREEN_LINE_SIZE + 1] = 0xf;
+            }
 
             return;
         }
