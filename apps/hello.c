@@ -4,14 +4,11 @@ int
 main()
 {
     clear_screen();
-    int vid_index = 0;
-    int cursor_position = 0;
-    while(1){
-        setcursor(cursor_position, 0);
-        int a = read();
-        if(a > 0){
-            write(a);
-            cursor_position += 1;
+    char *buf[READLINE_BUFFER_SIZE];
+    while (1) {
+        int read_count = readline(buf);
+        if (read_count > 0) {
+            puts(buf);
         }
     }
     return 25;

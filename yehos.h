@@ -25,4 +25,7 @@ readline(char *buffer); // buffer is assumed to have READLINE_BUFFER_SIZE
 
 void
 clear_screen();
+
+void
+puts(char *s);
 #endif
