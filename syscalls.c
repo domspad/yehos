@@ -68,7 +68,7 @@ syscall_handler(int syscall_num, const void *parms)
             const int32_t *pParms = (const int32_t *) parms;
             int y = (int) pParms[0];
             int x = (int) pParms[1];
-            u16 position = x + y*80;
+            u16 position = x + y * SCREEN_WIDTH;
 
             // cursor LOW port to vga INDEX register
             out8(0x3D4, 0x0F);
@@ -98,7 +98,7 @@ syscall_handler(int syscall_num, const void *parms)
         {
             char *videomem = (char *) VIDEO_MEM;
             memmove(videomem, videomem + SCREEN_LINE_SIZE, 24 * SCREEN_LINE_SIZE);
-            for (int i = 0; i < 80; i++) {
+            for (int i = 0; i < SCREEN_WIDTH; i++) {
                 videomem[i * 2 + 24 * SCREEN_LINE_SIZE] = ' ';
                 videomem[i * 2 + 24 * SCREEN_LINE_SIZE + 1] = 0xf;
             }
