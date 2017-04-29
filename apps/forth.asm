@@ -25,17 +25,31 @@ main:
 		mov esi, init
 		jmp NEXT
 
+%define HEADER_SIZE 16
+
+%define PREV_WORD 0
+
+%define NATIVE_HEADER $+HEADER_SIZE
+
+%define COMPOSITE_HEADER ENTER
+
+%macro HEADER 2-3 NATIVE_HEADER
+		dd %3            ; address of body
+		dd %1            ; name
+		dd PREV_WORD     ; link to prev defn
+		dd 0             ; immediate flag
+%define PREV_WORD %2
+%endmacro
+
 ENTER:
 		mov [ebp], esi
 		add ebp, 4
-		add ecx, 4
+		add ecx, HEADER_SIZE
 		mov esi, ecx
 		jmp NEXT
 
 EXIT:
-		dd ASM_EXIT
-
-ASM_EXIT:
+		HEADER "EXIT", EXIT
 		sub ebp, 4
 		mov esi, [ebp]
 		jmp NEXT
@@ -46,34 +60,19 @@ NEXT:
 		jmp [ecx]
 
 BYE:
-		dd ASM_BYE
-		dd "BYE "
-		dd 0
-		dd 0
-
-ASM_BYE:
+		HEADER "BYE ", BYE
 		cli
 		hlt
 
 DOLITERAL:
-		dd ASM_DOLITERAL
-		dd "DOLI"
-		dd BYE
-		dd 0
-
-ASM_DOLITERAL:
+		HEADER "DOLI", DOLITERAL
 		push ebx
 		mov ebx, [esi]
 		add esi, 4
 		jmp NEXT
 
 PRINT:
-		dd ASM_PRINT
-		dd "PRIN"
-		dd DOLITERAL
-		dd 0
-
-ASM_PRINT:
+		HEADER "PRIN", PRINT
 		push ebx ; move TOS to top of system stack
 						 ; so that it will be considered a param by c_print num
 		call c_print_num
@@ -81,15 +80,9 @@ ASM_PRINT:
 		pop ebx  ; pop the forth stack, print consumes arg
 		jmp NEXT
 
-FIND:
-		dd ASM_FIND
-		dd "FIND"
-		dd PRINT
-		dd 0
-
-ZERO dd 0
 ; ( word - addr )
-ASM_FIND:
+FIND:
+		HEADER "FIND", FIND
 		mov eax, [DICT]
 ASM_FIND_RECURSIVE:
 		add eax, 4
@@ -116,36 +109,21 @@ ASM_WORD_NOT_FOUND:
 		jmp NEXT
 
 BLANK:
-		dd ASM_BL
-		dd "BLAN"
-		dd FIND
-		dd 0
-
-ASM_BL:
+		HEADER "BLAN", BLANK
 		push ebx
 		mov ebx, 0
 		jmp NEXT
 
-FWORD:
-		dd ASM_WORD
-		dd "WORD"
-		dd BLANK
-		dd 0
-
 ; Eventually this should create words by delimiting
 ; a char buffer by the delimiter on the stack.
-ASM_WORD:
+FWORD:
+		HEADER "WORD", FWORD
 		mov ebx, [INPUT_PTR]
 		jmp NEXT
 
 ; ( 0 | addr -> num | execution ) 
 EXEC_OR_PUSH:
-		dd ASM_EXEC_OR_PUSH
-		dd "EORP"
-		dd FWORD
-		dd 0
-
-ASM_EXEC_OR_PUSH:
+		HEADER "EORP", EXEC_OR_PUSH
 		cmp ebx, 0
 		je ASM_PUSH_NUM
 		jmp ASM_EXECUTE
@@ -154,39 +132,22 @@ ASM_PUSH_NUM:
 ASM_EXECUTE:
 		jmp [ebx]
 
-DICT dd EXEC_OR_PUSH
-
-
-INTERPRET:
-		dd ENTER, BLANK, FWORD, FIND, EXEC_OR_PUSH, EXIT
-
-
 
 DUP:
-		dd ASM_DUP
-
-ASM_DUP:
+		HEADER "DUPL", DUP
 		push ebx
 		jmp NEXT
 
 STAR:
-		dd ASM_STAR
-
-ASM_STAR:
+		HEADER "STAR", STAR
 		pop eax
 		mul ebx
 		mov ebx, eax
 		jmp NEXT
 
-SQUARED:
-		dd ENTER
-		dd DUP, STAR, EXIT
-
 ; ( a b - a b a )
 OVER:
-		dd ASM_OVER
-
-ASM_OVER:
+		HEADER "OVER", OVER
 		mov eax, [esp]
 		push ebx
 		mov ebx, eax
@@ -194,9 +155,7 @@ ASM_OVER:
 
 ; ( a b - b a )
 SWAP:
-		dd ASM_SWAP
-
-ASM_SWAP:
+		HEADER "SWAP", SWAP
 		pop eax
 		push ebx
 		mov ebx, eax
@@ -204,9 +163,7 @@ ASM_SWAP:
 
 ; ( a b c - b c a )
 ROT:
-		dd ASM_ROT
-
-ASM_ROT:
+		HEADER "ROTA", ROT
 		mov eax, ebx
 		pop ebx
 		push eax
@@ -220,25 +177,36 @@ ASM_ROT:
 
 ; ( a - )
 ; alternate syntax for dd DROP_ASM
-DROP dd $+4
+DROP:
+		HEADER "DROP", DROP
 		pop ebx
 		jmp NEXT
 
+SQUARED:
+		HEADER "SQUA", SQUARED, COMPOSITE_HEADER
+		dd DUP, STAR, EXIT
+
 ; ( a b - b )
-NIP dd ENTER, SWAP, DROP, EXIT
+NIP:
+		HEADER "NIPP", NIP, COMPOSITE_HEADER
+		dd SWAP, DROP, EXIT
 
 ; ( a b - b a b )
-TUCK dd ENTER, SWAP, OVER, EXIT
+TUCK:
+		HEADER "TUCK", TUCK, COMPOSITE_HEADER
+		dd SWAP, OVER, EXIT
 
 ; >r (a - R: a)
-PUSHR dd $+4
+PUSHR:
+		HEADER "PUSR", PUSHR
 		mov [edx], ebx
 		add edx, 4
 		pop ebx
 		jmp NEXT
 
 ; r> ( R: a - a )
-POPR dd $+4
+POPR:
+		HEADER "POPR", POPR
 		push ebx
 		sub edx, 4 ; edx point at the top of the stack (which is empty)
 							 ; we need to reference the most recently pushed item
@@ -246,19 +214,28 @@ POPR dd $+4
 		jmp NEXT
 
 ; r@ ( R: a - a R: a )
-PEEKR dd $+4
+PEEKR:
+		HEADER "PEKR", PEEKR
 		push ebx
 		sub edx, 4
 		mov ebx, [edx]
 		add edx, 4
 		jmp NEXT
 
-FOUR db "4   "
-TWO db "2   "
+DICT dd PREV_WORD
+
+INTERPRET:
+		dd ENTER, BLANK, FWORD, FIND, EXEC_OR_PUSH, EXIT
 
 init:
 		dd DOLITERAL
-    dd FOUR
+		dd 42
+		dd DOLITERAL
+		dd 123
+		dd NIP
+		dd PRINT
+		dd DOLITERAL
+		dd "DOLI"
 		dd FIND
 		dd PRINT
 		dd BYE
