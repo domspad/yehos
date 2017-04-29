@@ -1,6 +1,14 @@
 global main
 extern c_print_num
 
+INPUT:
+		dd "DOLI"
+		dd 10
+		dd "PRIN"
+		dd "BYE "
+
+INPUT_PTR dd INPUT
+
 RETURN_STACK:
 		dd 0x0
 		dd 0x0
@@ -39,6 +47,9 @@ NEXT:
 
 BYE:
 		dd ASM_BYE
+		dd "BYE "
+		dd 0
+		dd 0
 
 ASM_BYE:
 		cli
@@ -46,7 +57,9 @@ ASM_BYE:
 
 DOLITERAL:
 		dd ASM_DOLITERAL
-		dd "DOLITERAL"
+		dd "DOLI"
+		dd BYE
+		dd 0
 
 ASM_DOLITERAL:
 		push ebx
@@ -56,6 +69,9 @@ ASM_DOLITERAL:
 
 PRINT:
 		dd ASM_PRINT
+		dd "PRIN"
+		dd DOLITERAL
+		dd 0
 
 ASM_PRINT:
 		push ebx ; move TOS to top of system stack
@@ -64,6 +80,87 @@ ASM_PRINT:
 		pop ebx  ; get rid of param from system stack
 		pop ebx  ; pop the forth stack, print consumes arg
 		jmp NEXT
+
+FIND:
+		dd ASM_FIND
+		dd "FIND"
+		dd PRINT
+		dd 0
+
+ZERO dd 0
+; ( word - addr )
+ASM_FIND:
+		mov eax, [DICT]
+ASM_FIND_RECURSIVE:
+		add eax, 4
+		push ebx
+		mov ebx, 0
+		cmp [eax], ebx
+		pop ebx
+		je ASM_WORD_NOT_FOUND
+		cmp [eax], ebx
+		je ASM_FIND_MATCH_FOUND
+		; not found match
+		add eax, 4 ; EAX now points to the address of the previous word in the dictionary.
+		mov eax, [eax]
+		jmp ASM_FIND_RECURSIVE
+		; match found
+ASM_FIND_MATCH_FOUND:
+		push ebx
+		sub eax, 4
+		mov ebx, eax
+		jmp NEXT
+ASM_WORD_NOT_FOUND:
+		push ebx
+		mov ebx, 0
+		jmp NEXT
+
+BLANK:
+		dd ASM_BL
+		dd "BLAN"
+		dd FIND
+		dd 0
+
+ASM_BL:
+		push ebx
+		mov ebx, 0
+		jmp NEXT
+
+FWORD:
+		dd ASM_WORD
+		dd "WORD"
+		dd BLANK
+		dd 0
+
+; Eventually this should create words by delimiting
+; a char buffer by the delimiter on the stack.
+ASM_WORD:
+		mov ebx, [INPUT_PTR]
+		jmp NEXT
+
+; ( 0 | addr -> num | execution ) 
+EXEC_OR_PUSH:
+		dd ASM_EXEC_OR_PUSH
+		dd "EORP"
+		dd FWORD
+		dd 0
+
+ASM_EXEC_OR_PUSH:
+		cmp ebx, 0
+		je ASM_PUSH_NUM
+		jmp ASM_EXECUTE
+ASM_PUSH_NUM:
+		pop ebx
+ASM_EXECUTE:
+		jmp [ebx]
+
+DICT dd EXEC_OR_PUSH
+
+
+INTERPRET:
+		dd ENTER, BLANK, FWORD, FIND, EXEC_OR_PUSH, EXIT
+
+
 
 DUP:
 		dd ASM_DUP
@@ -156,18 +253,12 @@ PEEKR dd $+4
 		add edx, 4
 		jmp NEXT
 
+FOUR db "4   "
+TWO db "2   "
+
 init:
 		dd DOLITERAL
-		dd 10
-		dd DOLITERAL
-		dd 1
-		dd DOLITERAL
-		dd 2
-		dd DOLITERAL
-		dd 3
-		dd PUSHR
-		dd PEEKR
-		dd PRINT
-		dd POPR
+    dd FOUR
+		dd FIND
 		dd PRINT
 		dd BYE
