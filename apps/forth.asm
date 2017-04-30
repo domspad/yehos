@@ -112,15 +112,19 @@ FIND_NEXT_WORD:
 
 BLANK:
 		HEADER "BLAN", BLANK
-		push TOS
-		mov TOS, 0
+		ppush 0
 		jmp NEXT
 
+; currently: ( string from input stream - same word on stack )
+; eventually: ( delimiter on stack and chars from inputs stream - word on stack )
 ; Eventually this should create words by delimiting
 ; a char buffer by the delimiter on the stack.
 FWORD:
 		HEADER "WORD", FWORD
 		mov TOS, [INPUT_PTR]
+		mov TOS, [TOS] ; dereference twice to get the value in the input stream.
+		mov eax, 4
+		add [INPUT_PTR], eax
 		jmp NEXT
 
 ; ( 0 | addr -> num | execution ) 
@@ -230,19 +234,12 @@ INTERPRET:
 		dd ENTER, BLANK, FWORD, FIND, EXEC_OR_PUSH, EXIT
 
 init:
-		dd DOLITERAL
-		dd 42
-		dd DOLITERAL
-		dd 123
-		dd DOLITERAL
-		dd "DOLI"
-		dd FIND
+		dd FWORD
 		dd PRINT
-		dd PRINT
+		dd FWORD
 		dd PRINT
 		dd BYE
 
-INPUT_STREAM:
-		dd DUP
+INPUT_STREAM dd "DUPE", "DOLI"
 
 INPUT_PTR dd INPUT_STREAM
