@@ -127,17 +127,25 @@ FWORD:
 		add [INPUT_PTR], eax
 		jmp NEXT
 
-; ( 0 | addr -> num | execution ) 
+; ( xt|name 0|1|-1 -> push num onto stack | execute word )
 EXEC_OR_PUSH:
 		HEADER "EORP", EXEC_OR_PUSH
 		cmp TOS, 0
-		je ASM_PUSH_NUM
-		jmp ASM_EXECUTE
-ASM_PUSH_NUM:
-		pop TOS
-ASM_EXECUTE:
-		jmp [TOS]
+		je EORP_PUSH_NUM
+		jmp EORP_EXECUTE
 
+EORP_PUSH_NUM:
+		pop TOS
+		jmp NEXT
+
+EORP_EXECUTE:
+		pop TOS ; get rid of flag
+		mov eax, [TOS]
+		mov ecx, TOS	; ecx must contain the xt of the subroutine
+									; this is usually set up by next and is expected
+									; by enter
+		pop TOS ; get rid of xt
+		jmp eax
 
 DUP:
 		HEADER "DUPL", DUP
@@ -231,15 +239,15 @@ PEEKR:
 LATEST dd PREV_WORD
 
 INTERPRET:
-		dd ENTER, BLANK, FWORD, FIND, EXEC_OR_PUSH, EXIT
+		HEADER "INTR", INTERPRET, COMPOSITE_HEADER
+		dd BLANK, FWORD, FIND, EXEC_OR_PUSH, EXIT
 
 init:
-		dd FWORD
-		dd PRINT
-		dd FWORD
-		dd PRINT
+		dd INTERPRET
+		dd INTERPRET
+		dd INTERPRET
 		dd BYE
 
-INPUT_STREAM dd "DUPE", "DOLI"
+INPUT_STREAM dd 42, "SQUA", "PRIN"
 
 INPUT_PTR dd INPUT_STREAM
