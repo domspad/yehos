@@ -167,9 +167,11 @@ readline(char *buf) {
             return read_count;
         } else if (c == BACKSPACE) {
             if (index >= 0) {
-                if (index > 0) _readline_delete();
+                if (index > 0) {
+                    _readline_delete();
+                    index--;
+                }
                 buf[index] = '\0';
-                index--;
             }
         } else if (c > 0) {
             _readline_writechar(readline_cursor_col, readline_cursor_row, c, 0xf);
