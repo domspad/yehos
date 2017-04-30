@@ -9,6 +9,7 @@ main()
         int read_count = readline(buf);
         if (read_count > 0) {
             puts(buf);
+            puts("\n");
         }
     }
     return 25;

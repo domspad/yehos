@@ -161,7 +161,6 @@ readline(char *buf) {
         setcursor(readline_cursor_col, readline_cursor_row);
         char c = read();
         if (c == '\n' || c == '\r'){
-            buf[index++] = c;
             _readline_cursor_next_line();
             buf[index] = '\0';
             return read_count;
