@@ -7,6 +7,11 @@ extern c_print_num
 %define PC esi						; forth program counter
 %define R_STACK_PTR ebp		; point to the top of the return stack.
 
+%macro ppush 1
+		push TOS
+		mov TOS, %1
+%endmacro
+
 %define HEADER_SIZE 16
 %define PREV_WORD 0
 %define NATIVE_HEADER $+HEADER_SIZE
@@ -16,7 +21,7 @@ extern c_print_num
 dd %3            ; address of body
 dd %1            ; name
 dd PREV_WORD     ; link to prev defn
-dd 0             ; immediate flag
+dd 1             ; immediate flag
 %define PREV_WORD %2
 %endmacro
 
@@ -70,33 +75,40 @@ PRINT:
 		pop TOS  ; pop the forth stack, print consumes arg
 		jmp NEXT
 
-; ( word - addr )
+%define WORD_NAME 4
+%define WORD_PREV 8
+%define WORD_IMMEDIATE_FLAG 12
+
+; ( word - str|xt 0|-1|+1)
 FIND:
 		HEADER "FIND", FIND
-		mov eax, [DICT]
-ASM_FIND_RECURSIVE:
-		add eax, 4
-		push TOS
-		mov TOS, 0
-		cmp [eax], TOS
+		mov eax, [LATEST]
+FIND_RECURSIVE:
+		cmp [eax + WORD_NAME], TOS
+		je FIND_NAME_MATCHED
+		jmp FIND_NAME_UNMATCHED
+
+FIND_NAME_MATCHED:
+		mov TOS, eax ; get rid of name and add xt onto stack
+		ppush [eax + WORD_IMMEDIATE_FLAG] ; also push immediate flag onto stack
+		jmp NEXT
+
+FIND_NAME_UNMATCHED:
+		ppush 0					; We need to compare across registers,
+										; so we push a zero into TOS
+		cmp [eax + WORD_PREV], TOS  ; see if it is the last word in the dictionary
 		pop TOS
-		je ASM_WORD_NOT_FOUND
-		cmp [eax], TOS
-		je ASM_FIND_MATCH_FOUND
-		; not found match
-		add eax, 4 ; EAX now points to the address of the previous word in the dictionary.
-		mov eax, [eax]
-		jmp ASM_FIND_RECURSIVE
-		; match found
-ASM_FIND_MATCH_FOUND:
-		push TOS
-		sub eax, 4
-		mov TOS, eax
+		je FIND_WORD_NOT_FOUND
+		jmp FIND_NEXT_WORD
+
+FIND_WORD_NOT_FOUND:
+    ppush 0
 		jmp NEXT
-ASM_WORD_NOT_FOUND:
-		push TOS
-		mov TOS, 0
-		jmp NEXT
+
+FIND_NEXT_WORD:
+		mov eax, [eax + WORD_PREV] ; go to previous word
+		jmp FIND_RECURSIVE
+
 
 BLANK:
 		HEADER "BLAN", BLANK
@@ -212,7 +224,7 @@ PEEKR:
 		add edx, 4
 		jmp NEXT
 
-DICT dd PREV_WORD
+LATEST dd PREV_WORD
 
 INTERPRET:
 		dd ENTER, BLANK, FWORD, FIND, EXEC_OR_PUSH, EXIT
@@ -222,10 +234,15 @@ init:
 		dd 42
 		dd DOLITERAL
 		dd 123
-		dd NIP
-		dd PRINT
 		dd DOLITERAL
 		dd "DOLI"
 		dd FIND
 		dd PRINT
+		dd PRINT
+		dd PRINT
 		dd BYE
+
+INPUT_STREAM:
+		dd DUP
+
+INPUT_PTR dd INPUT_STREAM
