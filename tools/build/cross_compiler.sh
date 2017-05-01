@@ -5,7 +5,7 @@
 # set up environment variables
 INSTALL_PATH=/opt/cross
 export PATH=$INSTALL_PATH/bin:$PATH
-TARGET=i386-elf
+TARGET=i386-elf32
 # export PATH=/usr/local/gcc-6.3.0/bin:$PATH (because I have another compiler...)
 
 # get binutils, gcc, mpfr, gmp, mpc, and isl, and newlib for our C standard library implementation (mac friendly)
