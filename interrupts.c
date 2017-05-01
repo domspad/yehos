@@ -2,7 +2,6 @@
 #include "memlib.h"
 #include "vgatext.h"
 #include "kb.h"
-#include "video.h"
 #include "globals.h"
 
 #define NUM_INTERRUPTS 64
@@ -32,24 +31,22 @@ void isr_timer(){
 volatile int pause_set =  1;
 volatile int seek;
 void isr_keyboard() {
-        u8 scancode = in8(0x60);
-        u16 val;
-        val = scancode_to_ascii(scancode);
-        switch (val) {
-            case ' ':
-                pause_set = 1-pause_set;
-                return;
-            case 'l':
-                seek += 30*5; // 30 frames/sec -> 5 sec seek.
-                return;
-            case 'h':
-                seek -= 30*5;
-                return;
-            case 0:
-                return;
-        }
+        // check if buffer full
 
-        //vga_putc(val, 0x07);
+        if (keyboard_buffer_full) {
+            kprintf("buffer full yo\n");
+        } else {
+            u8 scancode = in8(0x60);
+            u16 val = scancode_to_ascii(scancode);
+            KEYBOARD_BUFFER[write_keyboard_index] = val;
+
+            write_keyboard_index++;
+            write_keyboard_index = write_keyboard_index % MAX_KEYBOARD_BUFF;
+            if (write_keyboard_index == read_keyboard_index) {
+                keyboard_buffer_full = 1;
+            }
+        }
+        return;
 }
 
 void irq_handler(u32 irq)
@@ -70,14 +67,16 @@ void irq_handler(u32 irq)
 extern u32 irq_stage0_start, irq_stage0_fixup, irq_stage0_end;
 extern u32 exc_stage0_start, exc_stage0_fixup, exc_stage0_end;
 extern u32 excerr_stage0_start, excerr_stage0_fixup, excerr_stage0_end;
-//extern u32 syscall_stage0_start, syscall_stage0_fixup, syscall_stage0_end;
+extern u32 syscall_stage0_start, syscall_stage0_end;
 extern u32 asm_halt;
 
 static void
 create_handler(u8 *h, void *start, void *fixup, void *end, int intnum)
 {
     memcpy(h, (const void *) start, end - start);
-    h[fixup - start + 1] = intnum;
+    if (fixup) {
+        h[fixup - start + 1] = intnum;
+    }
 }
 
 static inline void
@@ -135,15 +134,13 @@ create_idt(u32 *idt) // and also stage0 interrupt stubs after the IDT
                                          &irq_stage0_end,
                                          i - 0x20);
         }
-#if 0
         else // syscall
         {
             create_handler(handler_addr, &syscall_stage0_start,
-                                         &syscall_stage0_fixup,
+                                         NULL,
                                          &syscall_stage0_end,
                                          i - 0x30);
         }
-#endif
         handler_addr += MAX_S0_LEN;
     }
 }

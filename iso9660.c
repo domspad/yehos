@@ -14,14 +14,21 @@ void *sector(void *baseptr, unsigned int sectornum)
     return &cdimg[sectornum * 2048];
 }
 
-DiskFile * iso9660_enumfiles(void *baseptr)
+const DirectoryRecord *get_first_entry(void *baseptr)
 {
+    
     const PrimaryVolumeDescriptor *pvd = sector(baseptr, 16);
 
     const DirectoryRecord *rootrecord = &pvd->root_directory_record;
     assert(rootrecord->record_len == sizeof(DirectoryRecord) + rootrecord->id_len);
 
     const DirectoryRecord *entry = sector(baseptr, rootrecord->data_sector);
+    return entry;
+}
+
+DiskFile * iso9660_enumfiles(void *baseptr)
+{
+    const DirectoryRecord *entry = get_first_entry(baseptr);
     int i=0;
     do {
         DiskFile *fp = &g_files[i++];
