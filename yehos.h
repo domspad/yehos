@@ -1,7 +1,7 @@
 #ifndef YEHOS_H_
 #define YEHOS_H_
 
-int READLINE_BUFFER_SIZE = 512;
+static const int READLINE_BUFFER_SIZE = 512;
 // header file for applications to include to get yehos' system calls
 
 void *
@@ -15,7 +15,7 @@ void
 write(char c);
 
 void
-writechar(int x, int y, int c, int color);
+writechar(int x, int y, char c, char color);
 
 void
 scroll();

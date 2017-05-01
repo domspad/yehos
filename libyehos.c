@@ -4,21 +4,23 @@ int READLINE_SCREEN_WIDTH = 80;
 int readline_cursor_row = 0;
 int readline_cursor_col = 0;
 
+inline int32_t syscall(int syscall_num, const int32_t *parms)
+{
+    int32_t ret;
+    asm volatile(
+            "int $0x30\n"
+            : "=a" (ret)
+            : "0" (syscall_num), "b" (parms)
+            : "memory");
+    return ret;
+}
+
 void *
 mmap(void *addr, int length, int prot, int flags,
      const char *filename, int offset)
 {
-    int32_t ret;
-    asm volatile ("pushl %1\n"
-                  "pushl %2\n"
-                  "mov $1, %%eax\n"
-                  "int $0x30\n"
-                  "add $8, %%esp\n"
-                    : "=a" (ret)
-                    : "r" (addr), "r" (filename)
-                    : "memory");
-
-    return (void *) ret;
+    int32_t parms[] = { (int32_t) filename, (int32_t) addr };
+    return (void *) syscall(1, parms);
 }
 
 #include "memlib.c"
@@ -26,70 +28,34 @@ mmap(void *addr, int length, int prot, int flags,
 char
 read()
 {
-    int32_t ret;
-    asm volatile("mov $2, %%eax\n"
-                 "int $0x30\n"
-                 : "=a" (ret)
-                 :
-                 : "memory");
-    return (char) ret;
+    return (char) syscall(2, NULL);
 }
 
 void
 write(char c)
 {
-    asm volatile("pushl %0\n"
-                 "mov $3, %%eax\n"
-                 "int $0x30\n"
-                 "add $4, %%esp\n"
-                   :
-                   : "r" ((int32_t) c)
-                   : "memory");
-    return;
+    int32_t parms[] = { c };
+    (void) syscall(3, parms);
 }
-
 
 void
 setcursor(int x, int y)
 {
-    asm volatile(
-            "pushl %0\n"
-            "pushl %1\n"
-            "mov $4, %%eax\n"
-            "int $0x30\n"
-            "add $8, %%esp\n"
-            :
-            : "r" ((int32_t) x), "r" ((int32_t) y)
-            : "memory");
-    return;
+    int32_t parms[] = { y, x };
+    (void) syscall(4, parms);
 }
 
 void
 writechar(int x, int y, char c, char color)
 {
-    asm volatile(
-            "pushl %0\n"
-            "pushl %1\n"
-            "pushl %2\n"
-            "pushl %3\n"
-            "mov $5, %%eax\n"
-            "int $0x30\n"
-            "add $16, %%esp\n"
-            :
-            : "r" ((int32_t) x), "r" ((int32_t) y), "r" ((int32_t) c), "r" ((int32_t) color)
-            : "memory");
-    return;
+    int32_t parms[] = { color, c, y, x };
+    (void) syscall(5, parms);
 }
 
 void
 scroll()
 {
-    asm volatile(
-            "mov $6, %%eax\n"
-            "int $0x30\n"
-            :
-            );
-    return;
+    (void) syscall(6, NULL);
 }
 
 void clear_screen() {
