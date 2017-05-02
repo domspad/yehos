@@ -4,6 +4,8 @@ int READLINE_SCREEN_WIDTH = 80;
 int readline_cursor_row = 0;
 int readline_cursor_col = 0;
 
+/* inline requests the compiler to replace function call with actual function code
+ * (to avoid the overhead of function setup and teardown) */
 inline int32_t syscall(int syscall_num, const int32_t *parms)
 {
     int32_t ret;
