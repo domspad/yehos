@@ -7,6 +7,7 @@ int readline_cursor_col = 0;
 inline int32_t syscall(int syscall_num, const int32_t *parms)
 {
     int32_t ret;
+    /* put syscall_num in eax (same as where return val will come) and parms pointer in ebx*/
     asm volatile(
             "int $0x30\n"
             : "=a" (ret)
