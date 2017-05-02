@@ -73,15 +73,15 @@ master_irq_end:
 
 global syscall_stage0_start
 syscall_stage0_start:
-    push ebx
-    mov ebx, esp
-    add ebx, 16                ; don't make eip, cs, eflags args
-    ; XXX: need to save other registers, or mark them as clobbered
-    push ebx                   ; instead just pass u32* parms
-    push eax
+    pushad
+
+    push ebx                   ; ebx == u32* parms
+    push eax                   ; eax == syscall_num
     call [sys_handler_ptr]     ; returns value in eax
-    add esp, 8                 ; drop u32* parms
-    pop ebx
+    add esp, 8                 ; drop syscall_handler parms
+
+    xchg eax, [esp+28]         ; put return value on stack to be popped back into eax
+    popad
     iret
 syscall_stage0_end equ $
 

@@ -6,3 +6,4 @@
 *.lst
 isopatcher
 vga/starwars.vga
+.gdbinit
