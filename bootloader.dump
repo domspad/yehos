@@ -1,0 +1,146 @@
+*** this is an annotated version of the hexdump of bootloader.bin. this file was generated via `nasm -f bin -l bootloader.lst -o bootloader.bin bootloader.asm`, which tells nasm to create a flat binary file, i.e. only with the code you wrote in the original (bootloader.asm), this defaults NASM to 16 BIT mode, and allows programmer to specify origin ORG, which NASM will assume this program begins when it is loaded into memory. It specifies one offset which is added to ALL internal address references
+
+
+[BITS 16]                                                                      tells NASM to generate code to run on processor running in 16-bit mode, any instructions from here on which have 32-bit data will be prefixed with 0x66 and those with 32-bit addresses will be prefixed by 0x67. 16-bit mode is also known as real-mode, which is characterized by 20-bit segmented memory address space (== 20 MiB of memory) and unlimited software access to all addressable memory, I/O addresses and peripheral hardware. Only when we switch to 32-bit "protected mode" will there be hardware enabled memory protection and availabiliity of virtual memory)
+[ORG 0x7c00]
+
+00000000  fa                                                                   [entry] cli
+             ea 82 7c 00 00                                                    jmp to 0x7c00:0x0082 == 0x7c082 == 508034
+
+
+
+                            00 00                                              (pad until 0x8)
+                                   10 00 00 00                                 (LBA of primary boot volume descriptor) (note because little endian == 0x00000010)
+                                               1b 00 00 00  |...|............| (LBA of boot file (again, == 0x0000001b) **DOESNT AGREE WITH LST file!
+00000010  00 02 00 00                                                          (length of boot file) **DOESNT AGREE WITH LST file!
+                      1a a0 04 11                                              (check sum) **DOESNT AGREE WITH LST file!
+                                   00 00 00 00 00 00 00 00  |................| (reserved space? with 10 0x00000000)
+00000020  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+00000030  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+
+00000040  0a 53 50 2f 4f 53 20 28  32 30 31 33 29 20 53 61  |.SP/OS (2013) Sa| (the banner string)
+00000050  75 6c 20 50 77 61 6e 73  6f 6e 0d 0a 00 
+                                                  65 72 72  |ul Pwanson...err| (the error string)
+00000060  6f 72 20 6c 6f 61 64 69  6e 67 20 6b 65 72 6e 65  |or loading kerne|
+00000070  6c 00 
+                10 00                                                          (Disk address packet (DAP), size of dap == 0x0010)
+                      01 00                                                    (DAP, number of sectors == 0x01)
+                            00 40  00 00                                       (DAP, address == 0000:4000 == 0x04000)
+                                         00 00 00 00 00 00  |l......@........| (DAP, start from LBA 0)
+00000080  00 00 
+
+
+                31 c0                                                          [start] xor ax, ax (literally 31==xor with r/m16/32, r16/32, c0-->reg/reg mode, ax, ax)
+                      8e d8                                                    mov ds <- ax (8e == mov with seg-reg and r/m16, d8 --> reg/reg mode w/rm16 --> ds seg-reg, ax source)
+                            8e c0                                              mov es <- ax (8e == mov with seg-reg and r/m16, c0 --> reg/reg mode w/rm16 --> es seg-reg, ax source)
+                                   8e d0                                       mov ss <- ax (8e == mov with seg-reg and r/m16, d0 w/rm16 --> ss seg-reg, ax source)
+                                        bc 00 7c                               mov sp <- 0x7c00 (bc == b8+r == mov with r16/32 and imm16/32, where r==sp, 007c==0x7c00 is immediate)
+                                                  88 16 00  |..1.........|...| mov [boot_drive], dl (88 == mov with r/m8 r8, 16 --> disp16 and dl, 007c == 0x7c00 == boot_drive is disp)
+00000090  7c 
+             be 40 7c                                                          mov si, banner, (be == b8+r == mov with r16/32 and imm16/32, where r==si, 407c == 0x7c40 == banner location) 
+                      e8 8e 00                                                 call writestr (e8 == call with rel16/32, 8e00 == 0x008e is relative offset from next instruct == 0x97 --> 0x8e + 0x97 = 0x125 == location of writestr label)
+                               be  72 7c                                       mov si, dap (be == b8 + r == mov with r16/32 and imm16/32, where r==si, 727c == 0x7c72 == dap location)
+                                         8a 16 00 7c                           mov dl, [boot_drive] (8a == mov with r8 and r/m8, where 16 --> disp16 and r8, r8 == dl, disp16 == 007c == 0x7c00 boot_drive)
+                                                     b4 42  ||.@|....r|...|.B  mov ah, 0x42 (b4 == b0 + r == mov with r8 and imm8, where r==4==ah, 42 == 0x42 is imm8)
+000000a0  cd 13                                                                int 0x13 (cd == call to interrupt <imm8>, with 13 == 0x13 is int number for BIOS sector-based hard disk and floppy disk read and write using CHS addressing, since ah==0x42, extended read sectors from drive, dl == 0x7c00 is drive index, ds:si is dap location == 0x0000:0x7c72 == 0x07c72 == dap location )
+                73 07                                                          jnc readoc (73 == jnc w/ rel8, 07 = 0x07 is offset from next instruction 0xa4 + 0x07 == 0xab == readok label location, note CF is set by int0x13 if error occured)  
+                      be 5d 7c                                                 [readerr] mov si, errstr (be == b8 + r == mov with r16/32 and imm16/32, where r==si, 5d7c == 0x7c5d == errstr location)
+                               e8  7b 00                                       call writestr (e8 == call with rel16/32, 7b00 == is relative offset from next instruct == 0xaa --> 0xaa + 0x7b = 0x125 == location of writestr label)
+                                         f4                                    hlt (f4 == hlt)
+                                            a1 02 40                           mov ax, [0x4002] (a1 == mov with eAX and moffs16/32, 0240 == 0x4002, ds:0x4002 = 0x04002 == memory location of sects read in (dap 3rd byte), which is boot sector?)
+                                                     a3 74  |..s..]|.{....@.t| mov [dap_num_sects], ax (a3 == mov with moffs16/32 and eAX, 747c == 0x7c74 == memory location of dap_num_sects)
+000000b0  7c 
+             a1 00 40                                                          mov ax, [0x4000] (a1 == mov with eAX and moffs16/32, 0040 == 0x4000, ds:0x4000 = 0x04000 == memory location of dap size =16)
+                      a3 7a 7c                                                 mov [dap_lba], ax (a3 == mov with moffs16/32 and eAX, 7c7a == 0x7c7a == memory location of dap_lba (currently == 0)
+                               b8  00 80                                       mov ax, 0x8000 (b8 == b8 + r == mov with r16/32 and imm16/32, where r==ax, 0080 = 0x8000 == location where we will read the kernel sector to)
+                                         a3 76 7c                              mov [dap_addr], ax (a3 == mov ax into location provided by memory offset, which is 0x7c76 == dap_addr location)
+                                                  be 72 7c  ||..@.z|....v|.r|| mov si, dap (be == b8 + r == mov with r16/32 and imm16/32, where r==si, 727c == 0x7c72 == dap location)
+000000c0  8a 16 00 7c                                                          mov dl, [boot_drive] (8a == mov with r8 and r/m8, where 16 --> disp16 and r8, r8 == dl, disp16 == 007c == 0x7c00 boot_drive) (note that 0x16 is the ModR/M byte == 00 010 110 == mod=00, r8 == 010 == dl, and r/m == 110 == disp16)
+                      b4 42                                                    mov ah, 0x42 (b4 == b0 + r == mov with r8 and imm8, where r==4==ah, 42 == 0x42 is imm8) 
+                            cd 13                                              int 0x13 (cd == call to interrupt <imm8>, with 13 == 0x13 is int number for BIOS sector-based hard disk and floppy disk read and write using CHS addressing, since ah==0x42, extended read sectors from drive, dl == 0x7c00 is drive index, ds:si is dap location == 0x0000:0x7c72 == 0x07c72 == dap location )
+                                   72 da                                       jc readerr (72 == jc w/ rel8, da == 0xda is offset from next instruction 0xca + 0xda == 0x1a4 == 0xa4 (just 1 byte), which is location of readerr label )
+                                         e8 12 00                              [leap (to prot mode)] call enable_A20 (e8 == call with rel16/32, 1200 == 0x0012 is relative offset from next instruct == 0xcd + 0x12 == 0xdf == location of enable_A20 label) 
+                                                  0f 01 16  |...|.B..r.......| lgdt [GDT] (0f01 with 0x16 == 00 010 110, 010 == opcode extension=2, is load GDT, 00 + 110 --> disp16 so next two bytes specifies the offset from ORG,  307d == 0x7d30 == location of GDT label)
+000000d0  30 7d                                                                 
+                0f 20 c0                                                       mov eax, cr0 (0f20 == mov from control register, c0 == 11 000 000, 000 = cr0, 000 = eax)
+                         0c 01                                                 or al, 1 (0c == or al with imm8 value, 01 == 0x01)
+                               0f  22 c0                                       mov, cr0, eax (0f22 == mov to control register, c0 == cr0 and eax)
+                                         ea 48 7d 08 00                        jmp 0x08:protmain (ea == jmpf, op1 == ptr16:16/32 == sreg:0x7d48 == CS:0x7d48 == 0x0000:0x7d48 == 0x7d48)
+
+                                                        e8  |0}. ...."..H}...| [enable_A20] call a20wait (e8 == call, 2900 --> relative offset to a20wait --> 0xe2 + 0x29 == 0x10B == a20wait) 
+000000e0  29 00 
+                b0 ad                                                          mov al, 0xad (b0 == mov imm8 into r8,  b0 + r == 00 == al, and imm8 == 0xad)
+                      e6 64                                                    out 0x64, al (e6 == output contents of al to port 0x64, (ring level depends on IOPL == bits 12,13 in flags register)
+                            e8 22  00                                          call a20wait (see 3 lines up)
+                                      b0 d0                                    mov al, 0xd0 (see three lines up)
+                                            e6 64                              out 0x64, al
+                                                  e8 22 00  |)....d."....d.".| call a20wait2
+
+000000f0  e4 60                                                                in al, 0x60 (e4 == input from port 0x60 into al)
+                66 50                                                          push eax (0x66 == operand-size overide prefix (for 32-bit), 0x50 = push 0x50 + r == 0x00 == eax)
+                      e8 14 00                                                 call a20wait
+                               b0  d1                                          mov al, 0xd1
+                                      e6 64                                    out 0x64, al
+                                            e8 0d 00                           call a20 wait
+                                                     66 58  |.`fP......d...fX| pop eax (see push eax above)
+
+00000100  0c 02                                                                or al, 2 (see or al, 1 above)
+                e6 60                                                          out 0x60, al
+                      e8 04 00                                                 call a20wait
+                               b0  ae                                          mov al, 0xae
+                                      e6 64                                    out 0x64, al
+                                            e4 64                              [a20wait] in al, 0x64
+                                                  a8 02                        test al, 2 (a8 == test al, imm8 == 0x02)
+                                                        75  |...`......d.d..u| jnz a20wait (jump short if zf = 0, relative 8-bit = 0xfa --> 0x111 + 0xfa = 0x20b --> 0x10b (because overflow) == location of a20wait)
+00000110  fa 
+             c3                                                                ret (return from procedure)
+                e4 64                                                          [a20wait2] in al, 0x64
+                      a8 01                                                    test al, 1
+                            74 fa                                              jz a20wait2 (jump short if zf = 1, ... (see above))
+                                   c3                                          ret
+                                      50                                       [putc - puts char in al to screen] push ax (0x50 + r == 0x00 == ax)
+                                         53                                    push bx (0x50 + r == 0x03 == bx)
+                                            b4 0e                              mov ah, 0x0e (0xb0 + r == 0x04 == ah)
+                                                  bb 0f 00  |...d..t..PS.....| mov bx, 0x000f (0xb8 + r == 0x03 == bx)
+
+00000120  cd 10                                                                int 0x10
+                5b                                                             pop bx (0x58 + r == 0x03 == bx) 
+                   58                                                          pop ax (0x58 + r == 0x00 == ax)
+                      c3                                                       ret
+                         ac                                                    [writestr] lodsb (load byte from DS:SI into al)
+                            84 c0                                              test al, al (0x84 compare r/m8 r8, here 0xc0 --> al, al) (used to set flags)
+                                   74 05                                       jz end (jump short if zf = 1, jumps if al was 0x00 (i.e. null terminator)) 
+                                         e8 ec ff                              call putc
+                                                  eb f6                        jmp writestr (0xeb jmp rel8 == 0xf6 --> 0x12f + 0xf6 = 0x225 --> 0x125)
+                                                        c3  |..[X....t.......| ret
+                                                                               [BITS 32] Directive!
+                                                                               note GDT tells CPU about memory segments
+00000130  28 00                                                                [GDT defining...] dw 0x28 (the db, dw, ... instructions are pseudo! they just put the bytes out to the file directly) this word specifies size of table == 0x28 == 40 bytes (each entry in table is 8 bytes so... 5 entries)
+                30 7d 00 00                                                    dd GDT (0x00007d30 == linear address of GDT) 
+                            00 00                                              dw 0 (?)
+                                   ff ff 00 00 00 9a cf 00  |(.0}............| [gdtCS] dd 0x0000ffff, 0x00CF9A00 (base=0x0000, where segment begins, segment limit=0xffff = 64Ki, 0x00 = base 24-17 bits, 0x9a = access byte, 0xcf= 11001111b high 4 bits flags, low 4 bits are bits 16-19 of segment limit, 0x00 base address high 8 bits) ==> base address = 0x00000000, segment limit = 0xfffff(fff) opens all 4GiB of available memory
+
+00000140  ff ff 00 00 00 92 cf 00                                              [gdtDS (also ss, es, fs, gs)]  (see above interpretation)
+                                   66 b8 10 00                                 [protmain -- protected main] mov ax, 0x10 (0x66 = operand-size override prefix, 0xb8 = 0xb8 + r == ax, 0x0010)
+                                               8e d8                           mov ds, ax (8e == mov with seg-reg and r/m16, d8 --> reg/reg mode w/rm16 --> ds seg-reg, ax source)
+                                                     8e d0  |........f.......| mov ss, ax (same)
+
+00000150  8e c0                                                                mov es, ax
+                bc 00 60 00 00                                                 mov esp, 0x6000 (bc = b8 + r == mov imm32 into r32 where r = 0x4 = esp) marks the start of the stack
+                               b8  00 80 00 00                                 mov eax, 0x8000 (b8 = b8 + r == mov imm32 into r32 where r = 0x00 = eax) marks location of kmain in kernel 
+                                               ff d0                           call eax (0xff with opcode extension 0xd0 = 11 010 000, middle group = 2 == call procedure given by r32 == 11 000 = eax)
+                                                     f4                        [_halt] hlt
+                                                        eb  |....`...........| jmp hlt (eb = jmp rel8 == 0x161 + 0xFD = 0x25E --> 0x15E)
+00000160  fd 
+             00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................| times (512 - $ + entry - 2) db 0  (pads boot with zeroes till 511th byte)
+00000170  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+00000180  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+00000190  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+000001a0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+000001b0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+000001c0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+000001d0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+000001e0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+000001f0  00 00 00 00 00 00 00 00  00 00 00 00 00 00 
+                                                     55 aa  |..............U.| db 0x55, 0xAA (bootsector signature (this is what BIOS looks for to load boot sector))
+00000200
