@@ -1,5 +1,6 @@
 global main
 extern c_print_num
+extern readline
 
 %define TOS ebx						; holds the top value of the forth param stack.
 %define STACK_PTR esp 		; points to the top of the system stack,
@@ -123,9 +124,26 @@ FWORD:
 		HEADER "WORD", FWORD
 		mov TOS, [INPUT_PTR]
 		mov TOS, [TOS] ; dereference twice to get the value in the input stream.
+		cmp TOS, 0
+		je GET_WORD_FROM_STDIN
 		mov eax, 4
 		add [INPUT_PTR], eax
 		jmp NEXT
+GET_WORD_FROM_STDIN:
+		mov eax, INPUT_STREAM
+		mov [INPUT_PTR], eax ; reset input pointer to beginning of input stream
+		push eax ; give input stream as param to readline
+		call readline
+BREAKPOINT:
+		mov eax, 0
+		mov TOS, [INPUT_PTR]
+		add TOS, 4 ; pointer to next spot in input stream
+		mov [TOS], eax ; set next spot in input stream to 0, so that the next word will also be accepted from STDIN
+		pop TOS ; Clear the argument for readline
+		mov TOS, 0 ; in the future, we should use BLANK
+		jmp [FWORD]
+
+
 
 ; ( xt|name 0|1|-1 -> push num onto stack | execute word )
 EXEC_OR_PUSH:
@@ -256,6 +274,7 @@ QUIT:
 init:
 		dd QUIT
 
-INPUT_STREAM dd 42, "SQUA", "PRIN", "BYE ", 42, "PRIN"
-
+; Input stream becomes the buffer where new lines of input are stored.
+; Don't allocate anything below this.
 INPUT_PTR dd INPUT_STREAM
+INPUT_STREAM dd 42, 42, 0

@@ -260,14 +260,9 @@ int snprintf(char *buf, unsigned int sz, const char *fmt, ...)
 void c_print_num(int n) {
     char buffer[100];
     int len = snprintf(buffer, 100, "%d", n);
-
-    int i = 0;
-    while (i < len) {
-      write(buffer[i]);
-      i++;
-    }
-    
-    write(' ');
+    buffer[len] = '\n';
+    buffer[len+1] = '\0';
+    puts(buffer);
 
     return;
 }
