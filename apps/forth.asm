@@ -1,5 +1,6 @@
 global main
 extern c_print_num
+extern c_atoi
 extern readline
 
 %define TOS ebx						; holds the top value of the forth param stack.
@@ -134,7 +135,6 @@ GET_WORD_FROM_STDIN:
 		mov [INPUT_PTR], eax ; reset input pointer to beginning of input stream
 		push eax ; give input stream as param to readline
 		call readline
-BREAKPOINT:
 		mov eax, 0
 		mov TOS, [INPUT_PTR]
 		add TOS, 4 ; pointer to next spot in input stream
@@ -153,7 +153,12 @@ EXEC_OR_PUSH:
 		jmp EORP_EXECUTE
 
 EORP_PUSH_NUM:
-		pop TOS
+		push esp
+		call c_atoi ; Assume the string represents a number.
+BREAKPOINT:
+		pop TOS     ; pop esp off
+		pop TOS			; Remove the string from the top of the system stack.
+		mov TOS, eax ; Replace the string on the top of the forth stack the the result of c_atoi.
 		jmp NEXT
 
 EORP_EXECUTE:

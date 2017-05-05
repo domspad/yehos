@@ -267,3 +267,13 @@ void c_print_num(int n) {
     return;
 }
 
+int c_atoi(char *p) {
+    int k = 0;
+		int i = 0;
+    while (i < 4) {
+        k = (k<<3)+(k<<1)+(*p)-'0';
+        p++;
+				i++;
+     }
+     return k;
+}
