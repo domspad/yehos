@@ -1,6 +1,7 @@
 global main
 extern c_print_num
 extern c_atoi
+extern c_compare_strings
 extern readline
 
 %define TOS ebx						; holds the top value of the forth param stack.
@@ -19,12 +20,15 @@ extern readline
 %define NATIVE_HEADER $+HEADER_SIZE
 %define COMPOSITE_HEADER ENTER
 
-%macro HEADER 2-3 NATIVE_HEADER
-dd %3            ; address of body
-dd %1            ; name
-dd PREV_WORD     ; link to prev defn
-dd 1             ; immediate flag
-%define PREV_WORD %2
+%macro HEADER 1-2 NATIVE_HEADER
+%defstr STR_NAME %1
+%1_NAME db STR_NAME, "\0" ; allocate a variable-length name
+%1:
+	dd %2            ; address of body
+	dd %1_NAME       ; point to the name
+	dd PREV_WORD     ; link to prev defn
+	dd 1             ; immediate flag
+%define PREV_WORD %1
 %endmacro
 
 RETURN_STACK:
@@ -45,8 +49,7 @@ ENTER:
 		mov PC, ecx
 		jmp NEXT
 
-EXIT:
-		HEADER "EXIT", EXIT
+HEADER EXIT
 		sub R_STACK_PTR, 4
 		mov PC, [R_STACK_PTR]
 		jmp NEXT
@@ -56,20 +59,17 @@ NEXT:
 		add PC, 4
 		jmp [ecx]
 
-BYE:
-		HEADER "BYE ", BYE
+HEADER BYE
 		cli
 		hlt
 
-DOLITERAL:
-		HEADER "DOLI", DOLITERAL
+HEADER DOLITERAL
 		push TOS
 		mov TOS, [PC]
 		add PC, 4
 		jmp NEXT
 
-PRINT:
-		HEADER "PRIN", PRINT
+HEADER PRINT
 		push TOS ; move TOS to top of system stack
 						 ; so that it will be considered a param by c_print num
 		call c_print_num
@@ -81,39 +81,42 @@ PRINT:
 %define WORD_PREV 8
 %define WORD_IMMEDIATE_FLAG 12
 
+
 ; ( word - str|xt 0|-1|+1)
-FIND:
-		HEADER "FIND", FIND
+HEADER FIND
 		mov eax, [LATEST]
 FIND_RECURSIVE:
-		cmp [eax + WORD_NAME], TOS
+		push eax 						 ; store top of latest header
+		add eax, WORD_NAME
+		mov eax, [eax]
+		push eax						 ; put ptr to current word name on sys stack
+		push TOS						 ; put ptr to input word name on sys stack
+		call c_compare_strings
+		cmp eax, 0					 ; c_compare_strings returns 0 if the strings are equal
+		pop eax
+		pop eax							 ; restore top of latest header to eax
+		pop eax 						 ; restore eax after function call
 		je FIND_NAME_MATCHED
 		jmp FIND_NAME_UNMATCHED
-
 FIND_NAME_MATCHED:
 		mov TOS, eax ; get rid of name and add xt onto stack
 		ppush [eax + WORD_IMMEDIATE_FLAG] ; also push immediate flag onto stack
 		jmp NEXT
-
 FIND_NAME_UNMATCHED:
-		ppush 0					; We need to compare across registers,
-										; so we push a zero into TOS
+		ppush 0					; We need to compare across registers so we push a zero into TOS
 		cmp [eax + WORD_PREV], TOS  ; see if it is the last word in the dictionary
 		pop TOS
 		je FIND_WORD_NOT_FOUND
 		jmp FIND_NEXT_WORD
-
 FIND_WORD_NOT_FOUND:
     ppush 0
 		jmp NEXT
-
 FIND_NEXT_WORD:
 		mov eax, [eax + WORD_PREV] ; go to previous word
 		jmp FIND_RECURSIVE
 
 
-BLANK:
-		HEADER "BLAN", BLANK
+HEADER BLANK
 		ppush 0
 		jmp NEXT
 
@@ -121,11 +124,10 @@ BLANK:
 ; eventually: ( delimiter on stack and chars from inputs stream - word on stack )
 ; Eventually this should create words by delimiting
 ; a char buffer by the delimiter on the stack.
-FWORD:
-		HEADER "WORD", FWORD
-		mov TOS, [INPUT_PTR]
-		mov TOS, [TOS] ; dereference twice to get the value in the input stream.
-		cmp TOS, 0
+HEADER FWORD
+		mov TOS, [INPUT_PTR] ; push a pointer to the next thing in the input stream
+		mov eax, [TOS] ; dereference twice to get the value in the input stream.
+		cmp eax, 0		 ; check if we're at the end of the input stream (marked by a 0)
 		je GET_WORD_FROM_STDIN
 		mov eax, 4
 		add [INPUT_PTR], eax
@@ -146,16 +148,15 @@ GET_WORD_FROM_STDIN:
 
 
 ; ( xt|name 0|1|-1 -> push num onto stack | execute word )
-EXEC_OR_PUSH:
-		HEADER "EORP", EXEC_OR_PUSH
+HEADER EXEC_OR_PUSH
 		cmp TOS, 0
 		je EORP_PUSH_NUM
 		jmp EORP_EXECUTE
 
 EORP_PUSH_NUM:
-		push esp
+		mov eax, [esp]
+		push eax
 		call c_atoi ; Assume the string represents a number.
-BREAKPOINT:
 		pop TOS     ; pop esp off
 		pop TOS			; Remove the string from the top of the system stack.
 		mov TOS, eax ; Replace the string on the top of the forth stack the the result of c_atoi.
@@ -170,37 +171,32 @@ EORP_EXECUTE:
 		pop TOS ; get rid of xt
 		jmp eax
 
-DUP:
-		HEADER "DUPL", DUP
+HEADER DUP
 		push TOS
 		jmp NEXT
 
-STAR:
-		HEADER "STAR", STAR
+HEADER STAR
 		pop eax
 		mul TOS
 		mov TOS, eax
 		jmp NEXT
 
 ; ( a b - a b a )
-OVER:
-		HEADER "OVER", OVER
+HEADER OVER
 		mov eax, [STACK_PTR]
 		push TOS
 		mov TOS, eax
 		jmp NEXT
 
 ; ( a b - b a )
-SWAP:
-		HEADER "SWAP", SWAP
+HEADER SWAP
 		pop eax
 		push TOS
 		mov TOS, eax
 		jmp NEXT
 
 ; ( a b c - b c a )
-ROT:
-		HEADER "ROTA", ROT
+HEADER ROT
 		mov eax, TOS
 		pop TOS
 		push eax
@@ -214,36 +210,30 @@ ROT:
 
 ; ( a - )
 ; alternate syntax for dd DROP_ASM
-DROP:
-		HEADER "DROP", DROP
+HEADER DROP
 		pop TOS
 		jmp NEXT
 
-SQUARED:
-		HEADER "SQUA", SQUARED, COMPOSITE_HEADER
+HEADER SQUARED, COMPOSITE_HEADER
 		dd DUP, STAR, EXIT
 
 ; ( a b - b )
-NIP:
-		HEADER "NIPP", NIP, COMPOSITE_HEADER
+HEADER NIP, COMPOSITE_HEADER
 		dd SWAP, DROP, EXIT
 
 ; ( a b - b a b )
-TUCK:
-		HEADER "TUCK", TUCK, COMPOSITE_HEADER
+HEADER TUCK, COMPOSITE_HEADER
 		dd SWAP, OVER, EXIT
 
 ; >r (a - R: a)
-PUSHR:
-		HEADER "PUSR", PUSHR
+HEADER PUSHR
 		mov [edx], TOS
 		add edx, 4
 		pop TOS
 		jmp NEXT
 
 ; r> ( R: a - a )
-POPR:
-		HEADER "POPR", POPR
+HEADER POPR
 		push TOS
 		sub edx, 4 ; edx point at the top of the stack (which is empty)
 							 ; we need to reference the most recently pushed item
@@ -251,8 +241,7 @@ POPR:
 		jmp NEXT
 
 ; r@ ( R: a - a R: a )
-PEEKR:
-		HEADER "PEKR", PEEKR
+HEADER PEEKR
 		push TOS
 		sub edx, 4
 		mov TOS, [edx]
@@ -261,19 +250,16 @@ PEEKR:
 
 LATEST dd PREV_WORD
 
-INTERPRET:
-		HEADER "INTR", INTERPRET, COMPOSITE_HEADER
+HEADER INTERPRET, COMPOSITE_HEADER
 		dd BLANK, FWORD, FIND, EXEC_OR_PUSH, EXIT
 
-BRANCH:
-		HEADER "BRAN", BRANCH
+HEADER BRANCH
 		mov eax, [PC]
 		sub eax, 4
 		add PC, eax
 		jmp NEXT
 
-QUIT:
-		HEADER "QUIT", QUIT, COMPOSITE_HEADER
+HEADER QUIT, COMPOSITE_HEADER
 		dd INTERPRET, BRANCH, -4, EXIT
 
 init:
@@ -282,4 +268,4 @@ init:
 ; Input stream becomes the buffer where new lines of input are stored.
 ; Don't allocate anything below this.
 INPUT_PTR dd INPUT_STREAM
-INPUT_STREAM dd 42, 42, 0
+INPUT_STREAM db "0042", "PRINT", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
