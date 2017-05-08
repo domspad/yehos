@@ -2,6 +2,7 @@ global main
 extern c_print_num
 extern c_atoi
 extern c_compare_strings
+extern c_consume_word
 extern readline
 
 %define TOS ebx						; holds the top value of the forth param stack.
@@ -108,34 +109,42 @@ FIND_NEXT_WORD:
 		jmp FIND_RECURSIVE
 
 
-HEADER BLANK
-		ppush 0
+HEADER _BL
+		ppush ' '
 		jmp NEXT
 
 ; currently: ( string from input stream - same word on stack )
 ; eventually: ( delimiter on stack and chars from inputs stream - word on stack )
 ; Eventually this should create words by delimiting
 ; a char buffer by the delimiter on the stack.
-HEADER FWORD
-		mov TOS, [INPUT_PTR] ; push a pointer to the next thing in the input stream
+HEADER _WORD
+BREAKPOINT
+		ppush [INPUT_PTR] ; push a pointer to the next thing in the input stream
 		mov eax, [TOS] ; dereference twice to get the value in the input stream.
-		cmp eax, 0		 ; check if we're at the end of the input stream (marked by a 0)
+		and eax, 0x000000FF
+		cmp eax, 0		 ; check if we're at the end of the input stream (marked by the null termination character)
+		push TOS			 ; set up c call stack
 		je GET_WORD_FROM_STDIN
-		mov eax, 4
-		add [INPUT_PTR], eax
+		call c_consume_word
+		mov [INPUT_PTR], eax
+		pop eax				 ; clear c call stack
+		pop eax				 ; clear delimiter from stack
 		jmp NEXT
 GET_WORD_FROM_STDIN:
 		mov eax, INPUT_STREAM
 		mov [INPUT_PTR], eax ; reset input pointer to beginning of input stream
 		push eax ; give input stream as param to readline
 		call readline
-		mov eax, 0
-		mov TOS, [INPUT_PTR]
-		add TOS, 4 ; pointer to next spot in input stream
-		mov [TOS], eax ; set next spot in input stream to 0, so that the next word will also be accepted from STDIN
-		pop TOS ; Clear the argument for readline
-		mov TOS, 0 ; in the future, we should use BLANK
-		jmp [FWORD]
+		; mov eax, 0
+		; mov TOS, [INPUT_PTR]
+		; add TOS, 4 ; pointer to next spot in input stream
+		; mov [TOS], eax ; set next spot in input stream to 0, so that the next word will also be accepted from STDIN
+
+		pop eax
+		ppush ' ';
+		; pop TOS ; Clear the argument for readline
+		; mov TOS, ' ' ; in the future, we should use _BL
+		jmp [_WORD]
 
 
 
@@ -242,7 +251,7 @@ HEADER PEEKR
 
 HEADER PRINT
 		push TOS ; move TOS to top of system stack
-						 ; so that it will be considered a param by c_print num
+						 ; so that it will be considered a param by c_print_num
 		call c_print_num
 		pop TOS  ; get rid of param from system stack
 		pop TOS  ; pop the forth stack, print consumes arg
@@ -251,7 +260,7 @@ HEADER PRINT
 LATEST dd PREV_WORD
 
 HEADER INTERPRET, COMPOSITE_HEADER
-		dd BLANK, FWORD, FIND, EXEC_OR_PUSH, EXIT
+		dd _BL, _WORD, FIND, EXEC_OR_PUSH, EXIT
 
 HEADER BRANCH
 		mov eax, [PC]
@@ -268,4 +277,4 @@ init:
 ; Input stream becomes the buffer where new lines of input are stored.
 ; Don't allocate anything below this.
 INPUT_PTR dd INPUT_STREAM
-INPUT_STREAM db "0042", 0
+INPUT_STREAM db "0042 DUP PRINT PRINT", 0
