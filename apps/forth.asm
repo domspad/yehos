@@ -22,7 +22,7 @@ extern readline
 
 %macro HEADER 1-2 NATIVE_HEADER
 %defstr STR_NAME %1
-%1_NAME db STR_NAME, "\0" ; allocate a variable-length name
+%1_NAME db STR_NAME, 0 ; allocate a variable-length name
 %1:
 	dd %2            ; address of body
 	dd %1_NAME       ; point to the name
@@ -67,14 +67,6 @@ HEADER DOLITERAL
 		push TOS
 		mov TOS, [PC]
 		add PC, 4
-		jmp NEXT
-
-HEADER PRINT
-		push TOS ; move TOS to top of system stack
-						 ; so that it will be considered a param by c_print num
-		call c_print_num
-		pop TOS  ; get rid of param from system stack
-		pop TOS  ; pop the forth stack, print consumes arg
 		jmp NEXT
 
 %define WORD_NAME 4
@@ -203,7 +195,7 @@ HEADER ROT
 
 		mov eax, TOS
 		add STACK_PTR, 4
-		pop TOS ; a is correct position
+		pop TOS ; a is in correct position
 		push eax ; c is in correct position
 		sub STACK_PTR, 4
 		jmp NEXT
@@ -248,6 +240,14 @@ HEADER PEEKR
 		add edx, 4
 		jmp NEXT
 
+HEADER PRINT
+		push TOS ; move TOS to top of system stack
+						 ; so that it will be considered a param by c_print num
+		call c_print_num
+		pop TOS  ; get rid of param from system stack
+		pop TOS  ; pop the forth stack, print consumes arg
+		jmp NEXT
+
 LATEST dd PREV_WORD
 
 HEADER INTERPRET, COMPOSITE_HEADER
@@ -268,4 +268,4 @@ init:
 ; Input stream becomes the buffer where new lines of input are stored.
 ; Don't allocate anything below this.
 INPUT_PTR dd INPUT_STREAM
-INPUT_STREAM db "0042", "PRINT", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+INPUT_STREAM db "0042", 0
