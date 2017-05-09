@@ -32,11 +32,6 @@ extern readline
 %define PREV_WORD %1
 %endmacro
 
-RETURN_STACK:
-		dd 0x0
-		dd 0x0
-		dd 0x0
-		dd 0x0
 
 main:
 		mov R_STACK_PTR, RETURN_STACK
@@ -267,6 +262,7 @@ init:
 		dd QUIT
 
 ; Input stream becomes the buffer where new lines of input are stored.
-; Don't allocate anything below this.
 INPUT_PTR dd INPUT_STREAM
-INPUT_STREAM db "0042 SQUARED PRINT", 0
+INPUT_STREAM times 256 db 0
+
+RETURN_STACK times 256 db 0
