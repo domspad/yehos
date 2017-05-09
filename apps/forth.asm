@@ -119,12 +119,13 @@ HEADER _BL
 ; a char buffer by the delimiter on the stack.
 HEADER _WORD
 BREAKPOINT
-		ppush [INPUT_PTR] ; push a pointer to the next thing in the input stream
-		mov eax, [TOS] ; dereference twice to get the value in the input stream.
+		mov eax, [INPUT_PTR]
+		mov eax, [eax] ; dereference twice to get the value in the input stream.
 		and eax, 0x000000FF
 		cmp eax, 0		 ; check if we're at the end of the input stream (marked by the null termination character)
-		push TOS			 ; set up c call stack
 		je GET_WORD_FROM_STDIN
+		ppush [INPUT_PTR] ; push a pointer to the next thing in the input stream
+		push TOS 			 ; set up c call stack
 		call c_consume_word
 		mov [INPUT_PTR], eax
 		pop eax				 ; clear c call stack
@@ -135,17 +136,8 @@ GET_WORD_FROM_STDIN:
 		mov [INPUT_PTR], eax ; reset input pointer to beginning of input stream
 		push eax ; give input stream as param to readline
 		call readline
-		; mov eax, 0
-		; mov TOS, [INPUT_PTR]
-		; add TOS, 4 ; pointer to next spot in input stream
-		; mov [TOS], eax ; set next spot in input stream to 0, so that the next word will also be accepted from STDIN
-
 		pop eax
-		ppush ' ';
-		; pop TOS ; Clear the argument for readline
-		; mov TOS, ' ' ; in the future, we should use _BL
 		jmp [_WORD]
-
 
 
 ; ( xt|name 0|1|-1 -> push num onto stack | execute word )
@@ -277,4 +269,4 @@ init:
 ; Input stream becomes the buffer where new lines of input are stored.
 ; Don't allocate anything below this.
 INPUT_PTR dd INPUT_STREAM
-INPUT_STREAM db "0042 DUP PRINT PRINT", 0
+INPUT_STREAM db "0042 SQUARED PRINT", 0
