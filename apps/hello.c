@@ -3,11 +3,13 @@
 int
 main()
 {
-    int vid_index = 0;
-    while(1){
-        int a = read();
-        if(a > 0){
-            write(a);
+    clear_screen();
+    char *buf[READLINE_BUFFER_SIZE];
+    while (1) {
+        int read_count = readline(buf);
+        if (read_count > 0) {
+            puts(buf);
+            puts("\n");
         }
     }
     return 25;
