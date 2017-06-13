@@ -1,16 +1,18 @@
 ; compile with nasm, use as disk image to qemu-system-i386
 
-[BITS 16]
-[ORG 0x7c00]
+[BITS 16]        ; Assembler directives - tell the assembler how to interpret the instructions. This one says "boot in 16-bit mode" - as opposed to the default 32-bit mode.
+                 ; 16-bit mode is also known as real mode, as opposed to protected mode.
+[ORG 0x7c00]     ; Tells the BIOS where to load this code into main memory.
 
-boot_drive equ $
+boot_drive equ $ ; Sets a var that tells where this code is loaded in memory.
 
 entry:
-    cli
+    cli          ; Clear interrupts
     jmp 0x0000:start
 
     times (8 - $ + entry) db 0   ; pad until boot-info-table
 
+; Information about the storage device the bootloader is on
 ; don't bother with making el torito load the kernel image
 iso_boot_info:
 bi_pvd  dd 16           ; LBA of primary volume descriptor
@@ -23,8 +25,10 @@ banner db 10, "SP/OS (2013) Saul Pwanson", 13, 10, 0
 errstr db "error loading kernel", 0
 
 ; Disk Address Packet
-dap db 16, 0            ; [2] sizeof(dap)
-dap_num_sects    dw 1                ; [2] transfer 1 sectors (before PVB)
+; Info used to load in data from the storage device.
+; (The BIOS only loaded the sector where it found the bootloader)
+dap db 16, 0                   ; [2] sizeof(dap)
+dap_num_sects    dw 1          ; [2] transfer 1 sectors (before PVB)
 dap_addr   dw 0x4000, 0x0      ; [4] to 0:4000
 dap_lba    dd 0, 0             ; [8] from LBA 0
 
@@ -32,20 +36,22 @@ start:
     xor ax, ax
     mov ds, ax
     mov es, ax
-    mov ss, ax
-    mov sp, 0x7c00      ; setup stack just before the code
+    mov ss, ax           ; zero out all registers
+    mov sp, 0x7c00       ; set up stack just before the code
 
-    mov [boot_drive], dl
+    mov [boot_drive], dl ; Bios puts the # of the disk where it found the bootloader in DL.
+                         ; We will use it to get more data in the future.
 
     ; display banner
     mov si, banner
     call writestr
 
-    ; read first sector from disk
+    ; Read first sector from disk.
+    ; The first sector of the iso contains the address of the kernel on the iso.
     mov si, dap
     mov dl, [boot_drive]
     mov ah, 0x42
-    int 0x13
+    int 0x13          ; BIOS interupt 42-13 = read from disk
     jnc readok
 
 readerr:
@@ -56,12 +62,12 @@ readerr:
 readok:
     ; at 0x4000 is kernel sector lba (u16)
     ; at 0x4002 is number of kernel sectors (u16)
-    ; read kernel from disk
+    ; We're overrwriting the dap (disk address packet) so we can read from the location where the kernel is stored.
     mov ax, [0x4002]
     mov [dap_num_sects], ax
     mov ax, [0x4000]
     mov [dap_lba], ax
-    mov ax, 0x8000
+    mov ax, 0x8000      ; The next read to main memory (which will be the kernel) should be read to here.
     mov [dap_addr], ax
 
     mov si, dap
@@ -71,12 +77,13 @@ readok:
     jc readerr
 
 leap:
-    call enable_A20
+    ; Preparing to go into protected mode and transfer control to the kernel.
+    call enable_A20                 ; Allow use of all address lines on the address bus.
 
     lgdt [GDT]                      ; ge
     mov eax, cr0                    ; ro
     or al, 1                        ; ni
-    mov cr0, eax                    ; mo
+    mov cr0, eax                    ; mo      (put a 1 in CR0)
     jmp 0x08:protmain               ; !!
 
 enable_A20: ; from wiki.osdev.org
@@ -159,10 +166,10 @@ protmain:
 
     mov esp, 0x6000      ; data stack grows down
 
-    mov eax, 0x8000
+    mov eax, 0x8000      ; jump to kernel main!
     call eax
 
-_halt:
+_halt:                   ; Halt is called if we fall through for some reason.
     hlt
     jmp _halt
 
