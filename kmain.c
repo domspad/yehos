@@ -33,10 +33,19 @@ kmain(void)
     kprintf("first byte: %d\n", *(char *)0x01000000);
 
     mainptr_t entry = (mainptr_t) 0x01000000;
+
+    save_context(0);
+
+    switch_executing_task(0);
+
     (*entry)(0, NULL);
+
     kprintf("kernel initialized\n");
     setup_timer(30);
 
-    while (1) yield();
+    while (1) {
+        // TODO put spinny on visible screen
+        yield();
+    }
 
 }
