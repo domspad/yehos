@@ -1,142 +1,54 @@
 [bits 32]
 
-global asm_swap_context, asm_save_context
+; passed context_t *
+asm_restore_context:
+    mov ebx, [esp+4] ; context_t *target_ctx
+    mov eax, [ebx]   ; ss
+    mov ecx, [ebx+4] ; esp
+    mov edx, [ebx+8] ; cr3
 
-; params: *fromctx, desired return address on context load
-asm_save_context:
-    pushf
-    push edi
-
-    mov edi, [esp+12]
-
-    mov ax, ds
-    stosd
-    mov ax, es
-    stosd
-    mov ax, fs
-    stosd
-    mov ax, gs
-    stosd
-
-    mov ax, ss
-    stosd
-
-    mov eax, ebx
-    stosd
-    mov eax, ecx
-    stosd
-    mov eax, edx
-    stosd
-
-    pop eax ; old edi
-    stosd
-    mov eax, esi
-    stosd
-
-    mov eax, ebp
-    stosd
-
-    mov eax, cr3
-    stosd
-
-    pop eax     ; eflags
-    stosd
-
-    mov ax, cs
-    stosd
-
-    pop ebx     ; eip (return addr)
-    mov eax, [esp+4]  ; desired return address on ctx load, passed as param
-    stosd
-
-    push ebx
-    ret
-
-asm_swap_context: ; save to fromctx, load from toctx
-    pushf
-    push esi
-    push edi
-
-    mov edi, [esp+16]
-    mov esi, [esp+12]
-
-    mov ax, ds
-    stosd
-    mov ax, es
-    stosd
-    mov ax, fs
-    stosd
-    mov ax, gs
-    stosd
-
-    mov ax, ss
-    stosd
-
-    mov eax, ebx
-    stosd
-    mov eax, ecx
-    stosd
-    mov eax, edx
-    stosd
-
-    pop eax ; old edi
-    stosd
-    pop eax ; old esi
-    stosd
-
-    mov eax, ebp
-    stosd
-
-    mov eax, cr3
-    stosd
-
-    pop eax     ; eflags
-    stosd
-
-    mov ax, cs
-    stosd
-
-    mov eax, [esp+8]  ; desired return address on ctx load, passed as param
-    stosd
-
-    mov eax, esp
-    stosd
-
-    ; now start loading old one
-
-    lodsd
-    mov ds, ax
-    lodsd
-    mov es, ax
-    lodsd
-    mov fs, ax
-    lodsd
-    mov gs, ax
-    lodsd
+    mov cr3, edx     ; go to new address space
     mov ss, ax
+    mov esp, ecx     ; replace stack
 
-    lodsd
-    mov ebx, eax
-    lodsd
-    mov ecx, eax
-    lodsd
-    mov edx, eax
-    lodsd
-    mov edi, eax
-    lodsd
-    mov esi, eax
-    lodsd
-    mov ebp, eax
+    pop ds
+    pop es
+    pop fs
+    pop gs
 
-    lodsd
-    mov cr3, eax
-
-    lodsd     ; eflags
-    push eax
-    lodsd     ; code segment
-    push eax
-    lodsd     ; eip (return address)
-    push eax
+    pop ebp
+    pop edi
+    pop esi
+    pop edx
+    pop ecx
+    pop ebx
+    pop eax
 
     iret
+
+; args: context_t *current_ctx, *target_ctx
+asm_switch_to:
+    pop eax  ; return addr
+    pop ebx  ; context_t *
+
+    pushf    ; eflags
+    push cs  ; cs:
+    push eax ; repush return addr for eip
+
+    push eax ; clobbered
+    push ebx ; clobbered
+    push ecx
+    push edx
+    push esi
+    push edi
+    push ebp
+
+    push gs
+    push fs
+    push es
+    push ds
+
+    mov [ebx], ss
+    mov [ebx+4], esp
+    mov [ebx+8], cr3
 

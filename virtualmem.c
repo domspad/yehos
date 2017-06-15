@@ -53,7 +53,10 @@ handle_page_fault()
     ptable[pfaddr >> 12] = page | PRESENT_AND_RW;
 
     // test whether the ptable entry refers to the iso filesystem
-    if ((ptable_entry >> 28) == 4) {
+    if (is_cow(ptable_entry)) {
+        memcpy((void *) (pfaddr & 0xfffff000), get_address_from(pfaddr), 4096);
+    }
+    else if ((ptable_entry >> 28) == 4) {
         // "Use the fours"
         uint32_t lba = (ptable_entry & ~(uint32_t) 0xF0000000) >> 4;
         ata_disk *d = &disks[0];

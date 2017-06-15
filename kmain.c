@@ -31,14 +31,16 @@ kmain(void)
     ata_disk *d = &disks[0];
     mmap_disk(d);
 
+    int r = fork();
+    if (r) {
+        // parent
+        idle();
+    }
+
     mmap("HELLO.BIN", 0x01000000);
     kprintf("first byte: %d\n", *(char *)0x01000000);
 
     mainptr_t entry = (mainptr_t) 0x01000000;
-
-    save_context(0, idle);
-
-    switch_executing_task(0);
 
     (*entry)(0, NULL);
 
