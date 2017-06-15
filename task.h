@@ -5,8 +5,8 @@
 
 typedef uint32_t reg_t;
 typedef struct context_t {
-    int ready;
     reg_t regs[16];
+    int ready;
 } context_t;
 
 extern int current_task;

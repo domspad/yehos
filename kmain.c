@@ -46,11 +46,3 @@ kmain(void)
     setup_timer(30);
 }
 
-void
-idle() {
-    while (1) {
-        // TODO put spinny on visible screen
-        yield();
-    }
-}
-

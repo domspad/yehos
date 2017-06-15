@@ -42,3 +42,11 @@ yield(void)
     }
 }
 
+void
+idle() {
+    while (1) {
+        // TODO put spinny on visible screen
+        yield();
+    }
+}
+
