@@ -1,6 +1,6 @@
 [bits 32]
 
-global asm_save_context, asm_load_context
+global asm_swap_context
 
 asm_swap_context: ; save to fromctx, load from toctx
     pushf
@@ -40,30 +40,50 @@ asm_swap_context: ; save to fromctx, load from toctx
     mov eax, cr3
     stosd
 
-; now start loading old one
+    pop eax     ; eflags
+    stosd
+
+    mov ax, cs
+    stosd
+
+    pop eax     ; eip (return addr)
+    stosd
+
+    ; now start loading old one
+    
+    lodsd
+    mov ds, ax
+    lodsd
+    mov es, ax
+    lodsd
+    mov fs, ax
+    lodsd
+    mov gs, ax
+    lodsd
+    mov ss, ax
 
     lodsd
+    mov ebx, eax
+    lodsd
+    mov ecx, eax
+    lodsd
+    mov edx, eax
+    lodsd
+    mov edi, eax
+    lodsd
+    mov esi, eax
+    lodsd
+    mov ebp, eax
 
-
-asm_load_context:
-    mov esp, eax
-    add esp, 4    ; remove return address from esp given back to C
-
-    pop eax
+    lodsd
     mov cr3, eax
 
-    pop ebp
-    pop edi
-    pop esi
-    pop edx
-    pop ecx
-    pop ebx
-    mov eax, 0
-    pop gs
-    pop fs
-    pop es
-    pop ss
-    pop ds
+    lodsd     ; eflags
+    push eax
+    lodsd     ; code segment
+    push eax
+    lodsd     ; eip (return address)
+    push eax
 
-    iret ; pop EFLAGS/CS/EIP
+    iret
 
