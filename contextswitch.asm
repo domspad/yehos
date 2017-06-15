@@ -3,11 +3,11 @@
 global asm_swap_context, asm_save_context
 
 ; params: *fromctx, desired return address on context load
-asm_save_context: 
+asm_save_context:
     pushf
     push edi
 
-    mov edi, [esp+16] ; TODO: fromctx
+    mov edi, [esp+12]
 
     mov ax, ds
     stosd
@@ -30,7 +30,7 @@ asm_save_context:
 
     pop eax ; old edi
     stosd
-    pop eax ; old esi
+    mov eax, esi
     stosd
 
     mov eax, ebp
@@ -46,7 +46,7 @@ asm_save_context:
     stosd
 
     pop ebx     ; eip (return addr)
-    pop eax     ; desired return address on ctx load, passed as param
+    mov eax, [esp+4]  ; desired return address on ctx load, passed as param
     stosd
 
     push ebx
@@ -57,8 +57,8 @@ asm_swap_context: ; save to fromctx, load from toctx
     push esi
     push edi
 
-    mov edi, [esp+24] ; TODO: fromctx
-    mov esi, [esp+20] ; TODO: find right address
+    mov edi, [esp+16]
+    mov esi, [esp+12]
 
     mov ax, ds
     stosd
@@ -96,11 +96,14 @@ asm_swap_context: ; save to fromctx, load from toctx
     mov ax, cs
     stosd
 
-    pop eax     ; eip (return addr)
+    mov eax, [esp+8]  ; desired return address on ctx load, passed as param
+    stosd
+
+    mov eax, esp
     stosd
 
     ; now start loading old one
-    
+
     lodsd
     mov ds, ax
     lodsd
