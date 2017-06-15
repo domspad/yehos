@@ -6,10 +6,12 @@
 #include "kernel.h"
 #include "virtualmem.h"
 #include "memlib.h"
+#include "task.h"
 
 extern char START_BSS[], END_BSS[];
 void setup_interrupts(void *idtaddr);
 void setup_timer(int timer_hz);
+void idle();
 
 typedef int (*mainptr_t)(int argc, char **argv);
 
@@ -34,7 +36,7 @@ kmain(void)
 
     mainptr_t entry = (mainptr_t) 0x01000000;
 
-    save_context(0);
+    save_context(0, idle);
 
     switch_executing_task(0);
 
@@ -42,10 +44,13 @@ kmain(void)
 
     kprintf("kernel initialized\n");
     setup_timer(30);
+}
 
+void
+idle() {
     while (1) {
         // TODO put spinny on visible screen
         yield();
     }
-
 }
+

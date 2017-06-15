@@ -1,10 +1,13 @@
 #ifndef YEHOS_TASK_H
 #define YEHOS_TASK_H
 
+#include <stdint.h>
+
 typedef uint32_t reg_t;
-typedef struct task_t {
+typedef struct context_t {
+    int ready;
     reg_t regs[16];
-} task_t;
+} context_t;
 
 extern int current_task;
 
@@ -14,8 +17,8 @@ void switch_executing_task(int newlyExecutingTask);
 
 void switch_visible_task(int newlyVisibleTask);
 
-void save_context(int tasknum);  // for init
-extern void *asm_save_context(void);
-extern void asm_load_context(void *);
+void save_context(int tasknum, void *func);
+extern void asm_swap_context(context_t *fromctx, context_t *toctx);
+extern void asm_save_context(context_t *fromctx, void *eip);
 
 #endif

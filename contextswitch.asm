@@ -1,14 +1,64 @@
 [bits 32]
 
-global asm_swap_context
+global asm_swap_context, asm_save_context
+
+; params: *fromctx, desired return address on context load
+asm_save_context: 
+    pushf
+    push edi
+
+    mov edi, [esp+16] ; TODO: fromctx
+
+    mov ax, ds
+    stosd
+    mov ax, es
+    stosd
+    mov ax, fs
+    stosd
+    mov ax, gs
+    stosd
+
+    mov ax, ss
+    stosd
+
+    mov eax, ebx
+    stosd
+    mov eax, ecx
+    stosd
+    mov eax, edx
+    stosd
+
+    pop eax ; old edi
+    stosd
+    pop eax ; old esi
+    stosd
+
+    mov eax, ebp
+    stosd
+
+    mov eax, cr3
+    stosd
+
+    pop eax     ; eflags
+    stosd
+
+    mov ax, cs
+    stosd
+
+    pop ebx     ; eip (return addr)
+    pop eax     ; desired return address on ctx load, passed as param
+    stosd
+
+    push ebx
+    ret
 
 asm_swap_context: ; save to fromctx, load from toctx
     pushf
     push esi
     push edi
 
-    mov edi, [esp+4] ; TODO: fromctx
-    mov esi, [esp+8] ; TODO: find right address
+    mov edi, [esp+24] ; TODO: fromctx
+    mov esi, [esp+20] ; TODO: find right address
 
     mov ax, ds
     stosd

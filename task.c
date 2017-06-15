@@ -2,35 +2,33 @@
 
 #define NUM_TASKS 16
 
-task_t all_tasks[NUM_TASKS];
+context_t all_tasks[NUM_TASKS];
 int current_task = 0;
 
 int
 is_ready_task(int tasknum)
 {
-    task_t *t = &all_tasks[tasknum];
-    return t->esp != 0;
+    context_t *ctx = &all_tasks[tasknum];
+    return ctx->ready;
 }
 
 void
-save_context(int tasknum)
+save_context(int tasknum, void *eip)
 {
-    task_t *t = &all_tasks[tasknum];
-    t->esp = asm_save_context();
+    context_t *ctx = &all_tasks[tasknum];
+    asm_save_context(ctx, eip);
 }
 
 void
-switch_executing_task(int tasknum)
+switch_executing_task(int target_task_num)
 {
-    task_t *t = &all_tasks[current_task];
+    context_t *stale_context = &all_tasks[current_task];
+    context_t *target_context = &all_tasks[target_task_num];
 
-    t->esp = asm_save_context();
-    if (t->esp) {
-        // save_context returns twice: once when called and once when the context is re-loaded
-        // in the first case, load the new context; in the second, it's already loaded.
-        current_task = tasknum;
-        asm_load_context(all_tasks[current_task].esp);
-    }
+    stale_context->ready = 1;
+    asm_swap_context(stale_context, target_context);
+
+    memset(stale_context, 0, sizeof(*stale_context));
 }
 
 void
