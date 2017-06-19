@@ -26,3 +26,23 @@ run `sudo yehos/tools/build/cross_compiler.sh` (the cross compiler will be insta
 or
 
 execute the commands in the file manually. 
+
+## Memory Layout
+
+### Physical Memory
+
+? - 0x6000: bootstack
+0x7c00 - 0x7dff: boot sector
+0x8000 kernel
+
+0x7f000 - 0x7ffff kernel stack
+0x80000 starting page directory
+0x81000 first page table
+0x100000 page pool
+
+### Virtual Memory
+0 - 0x100000: identity mapped to physical memory
+0x100000 - ?: disk iso
+0x1000000: entry point to applications
+0xffc00000 - end: page table
+
