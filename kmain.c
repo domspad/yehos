@@ -26,6 +26,7 @@ kmain(void)
 
     setup_interrupts((void *) 0x1000);
     setup_paging();
+    setup_virtual_stack();
 
     init_ata();
     ata_disk *d = &disks[0];

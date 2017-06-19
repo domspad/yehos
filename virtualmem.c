@@ -11,6 +11,10 @@
 #define PTABLE_ADDR 0xffc00000
 #define DISK_MEMORY_ADDR_FLAG 0x40000000
 
+#define TOP_OF_KERNEL_STACK 0x7f000
+#define TOP_OF_VIRTUAL_STACK 0xffbff000
+#define STACK_SIZE 0xfff
+
 physaddr_t g_nextPage = 0x100000;
 uint32_t *ptable = (uint32_t *) 0xffc00000;
 
@@ -33,6 +37,23 @@ setup_paging()
     set_cr3(PAGEDIR_ADDR);
 
     set_cr0_paging();
+
+}
+
+void
+setup_virtual_stack()
+{
+    // Copy to virtual address space so that it's implicitly
+    // copied when we switch processes.
+    uint32_t *source = (void *) TOP_OF_KERNEL_STACK;
+    uint32_t *dest = (void *) TOP_OF_VIRTUAL_STACK;
+    for (int i = 0; i <= STACK_SIZE; i++) {
+        dest[i] = source[i];
+    }
+
+    // asm call to move esp up to the virtual stack
+    asm volatile ("add %esp, 0xffb80000");
+
 }
 
 physaddr_t

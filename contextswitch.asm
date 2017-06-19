@@ -56,7 +56,12 @@ asm_fork:
 
 		save_context
 
-		push ebx ; we know out of save context, ebx is the context we want to save to
+		; switch to the kernel stack
+		; we'll switch back to the application stack when we load the new context
+		mov esp 0x7ffff 
+
+		; we know out of save context, ebx is the context we want to save to
+		push ebx
 		call clone_page_directory
 		pop ebx
 
