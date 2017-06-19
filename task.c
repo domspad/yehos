@@ -64,10 +64,4 @@ clone_page_directory(context_t *new_ctx)
     new_ctx->cr3 = new_cr3;
 }
 
-pagetable_entry_t
-make_cow(pagetable_entry_t entry)
-{
-    // TODO: actually you know, make it cow
-    return entry;
-}
 

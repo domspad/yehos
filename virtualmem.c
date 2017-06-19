@@ -7,7 +7,9 @@
 
 #define PAGEDIR_ADDR 0x80000
 #define PT0_ADDR 0x81000
+#define READ_WRITE 0x2
 #define PRESENT_AND_RW 0x03
+#define COPY_ON_WRITE 0x200
 #define PTABLE_ADDR 0xffc00000
 #define DISK_MEMORY_ADDR_FLAG 0x40000000
 
@@ -75,7 +77,8 @@ handle_page_fault()
 
     // test whether the ptable entry refers to the iso filesystem
     if (is_cow(ptable_entry)) {
-        memcpy((void *) (pfaddr & 0xfffff000), get_address_from(pfaddr), 4096);
+        
+        memcpy((void *) (pfaddr & ~COPY_ON_WRITE), get_address_from(pfaddr), 4096);
     }
     else if ((ptable_entry >> 28) == 4) {
         // "Use the fours"
@@ -131,4 +134,19 @@ mmap(char *filename, uint32_t virt_addr){
     for(uint32_t lba = 0; lba < num_lbas; lba += 2)
         ptable[(virt_addr >> 12) + lba/2] = DISK_MEMORY_ADDR_FLAG + ((first_lba + lba) << 4); //0x4[lba]0
     return 0;
+}
+
+pagetable_entry_t
+make_cow(pagetable_entry_t entry)
+{
+    entry &= ~READ_WRITE;
+    entry |= COPY_ON_WRITE;
+    return entry;
+}
+
+bool
+is_cow(pagetable_entry_t entry)
+{
+    // the COPY_ON_WRITE bit is the 10th bit
+    return (entry >> 9) & 1; 
 }
