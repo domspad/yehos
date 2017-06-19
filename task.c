@@ -50,3 +50,24 @@ idle() {
     }
 }
 
+void
+clone_page_directory(context_t *new_ctx)
+{
+    physaddr_t new_cr3 = get_unused_page();
+    uint32_t *old_pagedir = (void *) get_cr3();
+    uint32_t *new_pagedir = (void *) new_cr3;  // assume identity mapping for now
+    int first_user_page = IDENTITY_MAP_END >> 22;
+    for (int i = first_user_page; i < 1024; ++i)
+    {
+        old_pagedir[i] = new_pagedir[i] = make_cow(old_pagedir[i]);
+    }
+    new_ctx->cr3 = new_cr3;
+}
+
+pagetable_entry_t
+make_cow(pagetable_entry_t entry)
+{
+    // TODO: actually you know, make it cow
+    return entry;
+}
+

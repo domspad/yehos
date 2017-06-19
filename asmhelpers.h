@@ -17,6 +17,9 @@
                   ((((unsigned long)(n) & 0xFF0000)) >> 8) | \
                   ((((unsigned long)(n) & 0xFF000000)) >> 24))
 
+typedef uint32_t physaddr_t;
+typedef uint32_t pagetable_entry_t;
+
 // in a exception handler
 struct exc_registers {
     u32 unused_eax, ecx, edx, ebx, esp, ebp, esi, edi;
@@ -78,13 +81,21 @@ get_cr2()
     return val;
 }
 
+DONT_EMIT u32
+get_cr3()
+{
+    u32 __force_order;
+    u32 val;
+    asm volatile("mov %%cr3,%0\n\t" : "=r" (val), "=m" (__force_order));
+    return val;
+}
+
 DONT_EMIT void
 set_cr0_paging(void)
 {
     asm volatile ("movl %cr0, %eax; orl $0x80000000, %eax; movl %eax, %cr0;");
 }
 
-typedef uint32_t physaddr_t;
 DONT_EMIT void
 set_cr3(physaddr_t ptable)
 {

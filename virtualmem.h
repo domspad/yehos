@@ -1,6 +1,7 @@
 #ifndef VIRTUALMEM_H
 #define VIRTUALMEM_H
 #define ISO_START 0x100000
+#define IDENTITY_MAP_END 0x40000000
 #include "ata.h"
 
 void handle_page_fault(void);
