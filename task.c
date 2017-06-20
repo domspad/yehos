@@ -1,4 +1,7 @@
-#include <task.h>
+#include "task.h"
+#include "virtualmem.h"
+#include "asmhelpers.h"
+#include "memlib.h"
 
 #define NUM_TASKS 16
 
@@ -12,13 +15,13 @@ is_ready_task(int tasknum)
     return ctx->ready;
 }
 
-void
-save_context(int tasknum, void *eip)
-{
-    context_t *ctx = &all_tasks[tasknum];
-    asm_save_context(ctx, eip);
-}
-
+/* void */
+/* save_context(int tasknum, void *eip) */
+/* { */
+/*     context_t *ctx = &all_tasks[tasknum]; */
+/*     asm_save_context(ctx, eip); */
+/* } */
+/*  */
 void
 switch_executing_task(int target_task_num)
 {
@@ -26,10 +29,16 @@ switch_executing_task(int target_task_num)
     context_t *target_context = &all_tasks[target_task_num];
 
     stale_context->ready = 1;
-    asm_swap_context(stale_context, target_context);
+    asm_switch_to(stale_context, target_context);
 
     memset(stale_context, 0, sizeof(*stale_context));
 }
+
+// Wraps asm_fork
+/* int */
+/* fork() { */
+/*  */
+/* } */
 
 void
 yield(void)

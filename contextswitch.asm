@@ -1,5 +1,8 @@
 [bits 32]
 
+global asm_switch_to
+extern clone_page_directory
+
 kernel_ss dw 0x10
 kernel_esp dd 0x
 
@@ -58,7 +61,7 @@ asm_fork:
 
 		; switch to the kernel stack
 		; we'll switch back to the application stack when we load the new context
-		mov esp 0x7ffff 
+		mov esp, 0x7ffff
 
 		; we know out of save context, ebx is the context we want to save to
 		push ebx

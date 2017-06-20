@@ -19,6 +19,7 @@
 
 physaddr_t g_nextPage = 0x100000;
 uint32_t *ptable = (uint32_t *) 0xffc00000;
+uint32_t swap_page[4096];
 
 void
 setup_paging()
@@ -72,20 +73,23 @@ handle_page_fault()
     uint32_t pfaddr = get_cr2();
     uint32_t ptable_entry = ptable[pfaddr >> 12];
 
+    if (is_cow(ptable_entry)) {
+        memcpy((void *) (pfaddr & 0xfffff000), swap_page, 4096);
+    }
+
     physaddr_t page = get_unused_page();
     ptable[pfaddr >> 12] = page | PRESENT_AND_RW;
 
     // test whether the ptable entry refers to the iso filesystem
     if (is_cow(ptable_entry)) {
-        
-        memcpy((void *) (pfaddr & ~COPY_ON_WRITE), get_address_from(pfaddr), 4096);
+        memcpy(swap_page, (void *) (pfaddr & 0xfffff000), 4096);
     }
     else if ((ptable_entry >> 28) == 4) {
         // "Use the fours"
-        uint32_t lba = (ptable_entry & ~(uint32_t) 0xF0000000) >> 4;
+        uint32_t lba = (ptable_entry & ~(uint32_t) 0xf0000000) >> 4;
         ata_disk *d = &disks[0];
         char *diskbuf = (void *) 0x90000;
-        while (atapi_read_lba(d, diskbuf, 0xFFFF, lba, 2) < 0) {
+        while (atapi_read_lba(d, diskbuf, 0xffff, lba, 2) < 0) {
             kprintf("timeout on sector %d\n", lba);
         }
         memcpy((void *) (pfaddr & 0xfffff000), diskbuf, d->sector_size*2);
@@ -144,7 +148,7 @@ make_cow(pagetable_entry_t entry)
     return entry;
 }
 
-bool
+int
 is_cow(pagetable_entry_t entry)
 {
     // the COPY_ON_WRITE bit is the 10th bit
