@@ -13,12 +13,11 @@
 #define PTABLE_ADDR 0xffc00000
 #define DISK_MEMORY_ADDR_FLAG 0x40000000
 
-#define BASE_OF_KERNEL_STACK 0x7f000
-#define BASE_OF_VIRTUAL_STACK 0xffbff000
-#define STACK_SIZE 0xfff
-#define DISTANCE_TO_VIRTUAL_STACK (BASE_OF_VIRTUAL_STACK - BASE_OF_KERNEL_STACK)
+typedef uint32_t page[0xfff >> 2];
 
-uint32_t swap_page[0xfff >> 2];
+int swap_page_index = 0;
+page swap_pages[2];
+
 physaddr_t g_nextPage = 0x100000;
 pagetable_entry_t *ptable = (pagetable_entry_t *) 0xffc00000;
 
@@ -27,8 +26,8 @@ setup_paging()
 {
     uint32_t *pagedir = (void *) PAGEDIR_ADDR;
     memset(pagedir, 0, 4096);
-    pagedir[0] = PT0_ADDR | PRESENT_AND_RW;
-    pagedir[1023] = PAGEDIR_ADDR | PRESENT_AND_RW;
+    pagedir[0] = make_present_and_rw(PT0_ADDR);
+    pagedir[1023] = make_present_and_rw(PAGEDIR_ADDR);
 
     uint32_t *pt0 = (void *) PT0_ADDR;
     memset(pt0, 0, 4096);
@@ -72,15 +71,16 @@ handle_page_fault()
     uint32_t ptable_entry = ptable[pfaddr >> 12];
 
     if (is_cow(ptable_entry)) {
-        memcpy(swap_page, (void *) (pfaddr & 0xfffff000), 4096);
+        memcpy(swap_pages[swap_page_index], (void *) (pfaddr & 0xfffff000), 4096);
+        swap_page_index = (swap_page_index + 1) % 2;
     }
 
     physaddr_t page = get_unused_page();
-    ptable[pfaddr >> 12] = page | PRESENT_AND_RW;
+    ptable[pfaddr >> 12] = make_present_and_rw(page);
 
     // test whether the ptable entry refers to the iso filesystem
     if (is_cow(ptable_entry)) {
-        memcpy((void *) (pfaddr & 0xfffff000), swap_page, 4096);
+        memcpy((void *) (pfaddr & 0xfffff000), swap_pages[swap_page_index], 4096);
     }
     else if ((ptable_entry >> 28) == 4) {
         // "Use the fours"
@@ -143,6 +143,13 @@ make_cow(pagetable_entry_t entry)
 {
     entry &= ~READ_WRITE;
     entry |= COPY_ON_WRITE;
+    return entry;
+}
+
+pagetable_entry_t
+make_present_and_rw(pagetable_entry_t entry)
+{
+    entry |= PRESENT_AND_RW;
     return entry;
 }
 

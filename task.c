@@ -5,6 +5,8 @@
 
 #define NUM_TASKS 16
 
+uint32_t swap_page[0xfff >> 2];
+
 context_t all_tasks[NUM_TASKS];
 int current_task = 0;
 
@@ -66,11 +68,21 @@ clone_page_directory(context_t *new_ctx)
     uint32_t *old_pagedir = (void *) get_cr3();
     uint32_t *new_pagedir = (void *) new_cr3;  // assume identity mapping for now
     int first_user_page = IDENTITY_MAP_END >> 22;
-    for (int i = first_user_page; i < 1024; ++i)
+   
+    // Copy stack to swap page.
+    // We're assuming the stack only occupies a single page.
+    uint32_t *current_stack = (void *) BASE_OF_VIRTUAL_STACK;
+    memcpy(swap_page, current_stack, STACK_SIZE);
+
+    // Make cow from the first non-identity mapped page up to (but not including) the stack.
+    for (int i = first_user_page; i < 1023; ++i)
     {
         old_pagedir[i] = new_pagedir[i] = make_cow(old_pagedir[i]);
     }
+
+    physaddr_t new_phys_stack = get_unused_page();
+    new_pagedir[1024] = make_present_and_rw(new_phys_stack);
+
     new_ctx->cr3 = new_cr3;
 }
-
 
