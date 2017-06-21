@@ -83,6 +83,7 @@ leap:
     lgdt [GDT]                      ; ge
     mov eax, cr0                    ; ro
     or al, 1                        ; ni
+    or eax, 0x10000                 ; write protect on for kernel
     mov cr0, eax                    ; mo      (put a 1 in CR0)
     jmp 0x08:protmain               ; !!
 
@@ -164,7 +165,7 @@ protmain:
     mov ss, ax
     mov es, ax
 
-    mov esp, 0x6000      ; data stack grows down
+    mov esp, 0x7fffc     ; data stack grows down
 
     mov eax, 0x8000      ; jump to kernel main!
     call eax

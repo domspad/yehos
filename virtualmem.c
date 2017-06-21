@@ -18,8 +18,7 @@
 #define STACK_SIZE 0xfff
 
 physaddr_t g_nextPage = 0x100000;
-uint32_t *ptable = (uint32_t *) 0xffc00000;
-uint32_t swap_page[4096];
+pagetable_entry_t *ptable = (pagetable_entry_t *) 0xffc00000;
 
 void
 setup_paging()
@@ -50,12 +49,12 @@ setup_virtual_stack()
     // copied when we switch processes.
     uint32_t *source = (void *) TOP_OF_KERNEL_STACK;
     uint32_t *dest = (void *) TOP_OF_VIRTUAL_STACK;
-    for (int i = 0; i <= STACK_SIZE; i++) {
+    for (int i = 0; i <= STACK_SIZE / 4; i++) {
         dest[i] = source[i];
     }
 
     // asm call to move esp up to the virtual stack
-    asm volatile ("add %esp, 0xffb80000");
+    asm volatile ("add $0xffb80000, %esp");
 
 }
 
@@ -72,9 +71,10 @@ handle_page_fault()
 {
     uint32_t pfaddr = get_cr2();
     uint32_t ptable_entry = ptable[pfaddr >> 12];
+    uint32_t swap_page[4096];
 
     if (is_cow(ptable_entry)) {
-        memcpy((void *) (pfaddr & 0xfffff000), swap_page, 4096);
+        memcpy(swap_page, (void *) (pfaddr & 0xfffff000), 4096);
     }
 
     physaddr_t page = get_unused_page();
@@ -82,7 +82,7 @@ handle_page_fault()
 
     // test whether the ptable entry refers to the iso filesystem
     if (is_cow(ptable_entry)) {
-        memcpy(swap_page, (void *) (pfaddr & 0xfffff000), 4096);
+        memcpy((void *) (pfaddr & 0xfffff000), swap_page, 4096);
     }
     else if ((ptable_entry >> 28) == 4) {
         // "Use the fours"
@@ -153,4 +153,20 @@ is_cow(pagetable_entry_t entry)
 {
     // the COPY_ON_WRITE bit is the 10th bit
     return (entry >> 9) & 1; 
+}
+
+int
+test_cow()
+{
+    int volatile *b = (int *) 0x000000;
+    *b = *b + 1;
+
+    pagetable_entry_t *a = &ptable[((uint32_t) b >> 12)];
+    *a = make_cow(*a);
+
+    asm volatile ( "invlpg (%0)" : : "b"(b) : "memory" );
+
+    b[0] = b[0] + 1;
+
+    return 0;
 }

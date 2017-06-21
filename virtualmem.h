@@ -13,4 +13,5 @@ int mmap(char *filename, uint32_t virt_addr);
 
 int is_cow(pagetable_entry_t entry);
 pagetable_entry_t make_cow(pagetable_entry_t entry);
+int test_cow(void);
 #endif

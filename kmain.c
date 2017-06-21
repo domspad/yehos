@@ -30,7 +30,7 @@ kmain(void)
 
     init_ata();
     ata_disk *d = &disks[0];
-    mmap_disk(d);
+    /* mmap_disk(d); */
 
     /* int r = fork(); */
     /* if (r) { */
@@ -38,12 +38,16 @@ kmain(void)
     /*     idle(); */
     /* } */
 
-    mmap("HELLO.BIN", 0x01000000);
-    kprintf("first byte: %d\n", *(char *)0x01000000);
+    /* clone_page_directory(context_t *new_ctx) */
+    /* uint32_t space =  */
+    test_cow();
 
-    mainptr_t entry = (mainptr_t) 0x01000000;
-
-    (*entry)(0, NULL);
+    /* mmap("HELLO.BIN", 0x01000000); */
+    /* kprintf("first byte: %d\n", *(char *)0x01000000); */
+    /*  */
+    /* mainptr_t entry = (mainptr_t) 0x01000000; */
+    /*  */
+    /* (*entry)(0, NULL); */
 
     kprintf("kernel initialized\n");
     setup_timer(30);
