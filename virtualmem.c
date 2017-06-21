@@ -13,10 +13,12 @@
 #define PTABLE_ADDR 0xffc00000
 #define DISK_MEMORY_ADDR_FLAG 0x40000000
 
-#define TOP_OF_KERNEL_STACK 0x7f000
-#define TOP_OF_VIRTUAL_STACK 0xffbff000
+#define BASE_OF_KERNEL_STACK 0x7f000
+#define BASE_OF_VIRTUAL_STACK 0xffbff000
 #define STACK_SIZE 0xfff
+#define DISTANCE_TO_VIRTUAL_STACK (BASE_OF_VIRTUAL_STACK - BASE_OF_KERNEL_STACK)
 
+uint32_t swap_page[0xfff >> 2];
 physaddr_t g_nextPage = 0x100000;
 pagetable_entry_t *ptable = (pagetable_entry_t *) 0xffc00000;
 
@@ -45,16 +47,13 @@ setup_paging()
 void
 setup_virtual_stack()
 {
-    // Copy to virtual address space so that it's implicitly
-    // copied when we switch processes.
-    uint32_t *source = (void *) TOP_OF_KERNEL_STACK;
-    uint32_t *dest = (void *) TOP_OF_VIRTUAL_STACK;
-    for (int i = 0; i <= STACK_SIZE / 4; i++) {
-        dest[i] = source[i];
-    }
+    uint32_t *source = (void *) BASE_OF_KERNEL_STACK;
+    uint32_t *dest = (void *) BASE_OF_VIRTUAL_STACK;
+    memcpy(dest, source, STACK_SIZE);
 
     // asm call to move esp up to the virtual stack
-    asm volatile ("add $0xffb80000, %esp");
+    uint32_t distance = DISTANCE_TO_VIRTUAL_STACK;
+    asm volatile  ("add %0, %%esp" : : "b" (distance));
 
 }
 
@@ -71,7 +70,6 @@ handle_page_fault()
 {
     uint32_t pfaddr = get_cr2();
     uint32_t ptable_entry = ptable[pfaddr >> 12];
-    uint32_t swap_page[4096];
 
     if (is_cow(ptable_entry)) {
         memcpy(swap_page, (void *) (pfaddr & 0xfffff000), 4096);
