@@ -10,7 +10,6 @@
 #define READ_WRITE 0x2
 #define PRESENT_AND_RW 0x03
 #define COPY_ON_WRITE 0x200
-#define PTABLE_ADDR 0xffc00000
 #define DISK_MEMORY_ADDR_FLAG 0x40000000
 
 typedef uint32_t page[0xfff >> 2];
@@ -62,6 +61,12 @@ get_unused_page()
     physaddr_t ret = g_nextPage;
     g_nextPage += 0x1000;
     return ret;
+}
+
+// Set a virtual address to point to a specific physical page
+void
+set_ptable_entry(virtaddr_t virt_addr, physaddr_t phys_addr) {
+    ptable[virt_addr >> 12] = make_present_and_rw(phys_addr);
 }
 
 void

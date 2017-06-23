@@ -18,6 +18,8 @@
                   ((((unsigned long)(n) & 0xFF000000)) >> 24))
 
 typedef uint32_t physaddr_t;
+typedef uint32_t virtaddr_t;
+typedef uint32_t ptable_index_t;
 typedef uint32_t pagetable_entry_t;
 
 // in a exception handler

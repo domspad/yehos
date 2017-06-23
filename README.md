@@ -44,6 +44,8 @@ execute the commands in the file manually.
 0 - 0x100000: identity mapped to physical memory
 0x100000 - ?: disk iso
 0x1000000: entry point to applications
+0xffbfd000 - 0xffbfdfff: swap space for copying the page directory
+0xffbfe000 - 0xffbfefff: swap space for copying the stack
 0xffbff000 - 0xffbfffff: application stack
 0xffc00000 - end: page table
 
