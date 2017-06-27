@@ -18,13 +18,6 @@ is_ready_task(int tasknum)
     return ctx->ready;
 }
 
-/* void */
-/* save_context(int tasknum, void *eip) */
-/* { */
-/*     context_t *ctx = &all_tasks[tasknum]; */
-/*     asm_save_context(ctx, eip); */
-/* } */
-/*  */
 void
 switch_executing_task(int target_task_num)
 {
@@ -37,11 +30,14 @@ switch_executing_task(int target_task_num)
     memset(stale_context, 0, sizeof(*stale_context));
 }
 
-// Wraps asm_fork
-/* int */
-/* fork() { */
-/*  */
-/* } */
+/* Wraps asm_fork */
+int
+fork() {
+    // @TODO: I think this should get the first empty task
+    context_t *stale_context = &all_tasks[current_task];
+    int ret = asm_fork(stale_context);
+    return ret;
+}
 
 void
 yield(void)

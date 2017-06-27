@@ -1,17 +1,16 @@
 [bits 32]
 
 global asm_switch_to
+global asm_fork
 extern clone_page_directory
 
 kernel_ss dw 0x10
-kernel_esp dd 0x
+kernel_esp dd 0x7ffff
 
 ; ebx is context_t
 %macro save_context 0
 		; starting in user stack
     pushf    ; eflags
-    push cs  ; cs:
-    push eax ; repush return addr for eip
 
     push eax ; clobbered
     push ebx ; clobbered
@@ -26,56 +25,17 @@ kernel_esp dd 0x
     push es
     push ds
 
-		; switch to kernel stack
-		cli
+		; store stack pointer and cr3 in task struct
 		mov ax, ss
     mov [ebx], ax
-
-		mov ax, [kernel_ss]
-		mov ss, ax
-
     mov [ebx+4], esp
-		mov esp, [kernel_esp]
 
 		mov eax, cr3
     mov [ebx+8], eax
-		sti
 %endmacro
 
-; FORK
-; save off the context to the stack and task struct
-;
-;	set up a new page directory in prep for swap 
-;   - copy pagedir to newly allocated page w/ cow setting
-;   - the new cr3 will be written into the new entry in the task struct
-; 
-; populate the new entry in the task struct with ss, esp, and the new cr3
-;
-; execute restore context: 
-;   load context from the stack (it's the one we just saved)
-asm_fork:
-		; context_t is first argument
-		mov ebx, [esp + 4]
 
-		save_context
-
-		; switch to the kernel stack
-		; we'll switch back to the application stack when we load the new context
-		mov esp, 0x7ffff
-
-		; we know out of save context, ebx is the context we want to save to
-		push ebx
-		call clone_page_directory
-		pop ebx
-
-	 	jmp asm_restore_context
-
-asm_switch_to:
-		save_context
-
-; ebx is the context_t *
-asm_restore_context:
-
+%macro restore_context 0
     mov eax, [ebx]   ; ss
     mov ecx, [ebx+4] ; esp
     mov edx, [ebx+8] ; cr3
@@ -98,6 +58,45 @@ asm_restore_context:
     pop ecx
     pop ebx
     pop eax
+		popf
+%endmacro
 
-    iret
+; FORK
+; save off the context to the stack and task struct
+;
+;	set up a new page directory in prep for swap 
+;   - copy pagedir to newly allocated page w/ cow setting
+;   - the new cr3 will be written into the new entry in the task struct
+; 
+; populate the new entry in the task struct with ss, esp, and the new cr3
+;
+; execute restore context: 
+;   load context from the stack (it's the one we just saved)
+asm_fork:
+		; context_t is first argument
+		mov ebx, [esp + 4]
+		save_context
 
+		; switch to the kernel stack
+		; we'll switch back to the application stack when we load the new context
+		mov ax, [kernel_ss]
+		mov ss, ax
+		mov esp, [kernel_esp]
+
+		; we know out of save context, ebx is the context we want to save to
+		push ebx
+		call clone_page_directory
+		pop ebx
+
+		restore_context
+		mov eax, 0
+		ret
+
+asm_switch_to:
+		save_context
+
+; ebx is the context_t *
+asm_restore_context:
+		restore_context
+		mov eax, 1
+		ret
