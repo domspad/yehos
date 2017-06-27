@@ -143,11 +143,18 @@ mmap(char *filename, uint32_t virt_addr){
     return 0;
 }
 
+int
+is_present(pagetable_entry_t entry) {
+  return entry & 1;
+}
+
 pagetable_entry_t
 make_cow(pagetable_entry_t entry)
 {
-    entry &= ~READ_WRITE;
-    entry |= COPY_ON_WRITE;
+    if (is_present(entry)) {
+        entry &= ~READ_WRITE;
+        entry |= COPY_ON_WRITE;
+    }
     return entry;
 }
 

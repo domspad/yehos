@@ -87,7 +87,7 @@ clone_page_directory(context_t *new_ctx)
 
     // Insert our new pagedir into the current address space so we can write to it.
     physaddr_t new_cr3 = get_unused_page();
-    virtaddr_t *new_pagedir = 0xffbfd000;
+    virtaddr_t *new_pagedir = (void *) 0xffbfd000;
     set_ptable_entry((virtaddr_t) new_pagedir, new_cr3);
 
     // Copy stack to swap page.
@@ -96,19 +96,42 @@ clone_page_directory(context_t *new_ctx)
     set_ptable_entry(SWAP_STACK, new_phys_stack);
     memcpy((void *) SWAP_STACK, (void *) BASE_OF_VIRTUAL_STACK, STACK_SIZE);
 
+    // Copy the page table that references the stack to a swap page
+    virtaddr_t *current_stack_ptable = (void *) 0xffffe000;
+    virtaddr_t *swap_stack_ptable = (void *) 0xffbfc000;
+    physaddr_t new_phys_stack_ptable = get_unused_page();
+    set_ptable_entry((virtaddr_t) swap_stack_ptable, new_phys_stack_ptable);
+    memcpy(swap_stack_ptable, current_stack_ptable, 4096);
+
     // Make cow from the first non-identity mapped page up to (but not including) the page directory itself.
-    ptable_index_t first_nonident_ptable_idx = 256;
+    ptable_index_t first_nonident_ptable_idx = 1;
     uint32_t page_size = 1024;
     virtaddr_t *base_ptable = (void *) 0xffc00000;
-    for (int i = first_nonident_ptable_idx; i < page_size-1; ++i) {
-        if (ptable_is_present(current_pagedir[i])) {
-            make_ptable_entries_cow((ptable_index_t) i*page_size);
+    // exclude the page directory itself and the page table that refers to the stack
+    for (int i = 0; i < page_size-1; ++i) {
+        // Copy identity-mapped pages to new pages directory without COW.
+        if (i < first_nonident_ptable_idx) {
+            new_pagedir[i] = current_pagedir[i];
+        } else if (i == 1022) {
+            // ptable that refers to the stack
+            new_pagedir[i] = current_pagedir[i]; 
+        } else {
+            if (ptable_is_present(current_pagedir[i])) {
+                make_ptable_entries_cow((ptable_index_t) i*page_size);
+                current_pagedir[i] = new_pagedir[i] = make_cow(current_pagedir[i]);
+            } else {
+                current_pagedir[i] = new_pagedir[i];
+            }
         }
-        current_pagedir[i] = new_pagedir[i] = make_cow(current_pagedir[i]);
     }
 
     // the physical swap stack becomes the real stack for the current address space
+    virtaddr_t stack_ptable_entry = base_ptable[BASE_OF_VIRTUAL_STACK >> 12];
+    asm volatile ( "invlpg (%0)" : : "b"(BASE_OF_VIRTUAL_STACK) : "memory" );
+    asm volatile ( "invlpg (%0)" : : "b"(stack_ptable_entry) : "memory" );
+    set_ptable_entry((virtaddr_t) current_stack_ptable, new_phys_stack_ptable);
     set_ptable_entry(BASE_OF_VIRTUAL_STACK, new_phys_stack);
+    base_ptable[SWAP_STACK >> 12] = 0x0000000;
 
     new_pagedir[1023] = make_present_and_rw(new_cr3);
     new_ctx->cr3 = new_cr3;
