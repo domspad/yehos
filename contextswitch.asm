@@ -37,14 +37,14 @@ kernel_esp dd 0x7ffff
 
 
 %macro restore_context 0
-    mov eax, [ebx]   ; ss
-    mov ecx, [ebx+4] ; esp
-    mov edx, [ebx+8] ; cr3
+    mov eax, [edx]   ; ss
+    ; mov ecx, [edx+4] ; esp
+    mov ecx, [edx+8] ; cr3
 
 		cli
-    mov cr3, edx     ; go to new address space
+    mov cr3, ecx     ; go to new address space
     mov ss, ax
-    mov esp, ecx     ; replace stack
+    mov esp, [edx+4]     ; replace stack
 		sti
 
     pop ds
@@ -76,7 +76,7 @@ kernel_esp dd 0x7ffff
 asm_fork:
 		; context_t is first argument
 		mov eax, [esp + 4] ; original context
-		mov ebx, [esp + 8] ; new context
+		mov edx, [esp + 8] ; new context
 		save_context
 
 		; switch to the kernel stack
@@ -86,23 +86,23 @@ asm_fork:
 		mov esp, [kernel_esp]
 
 		; we know out of save context, ebx is the context we want to save to
-		push ebx ; new context - we'll dupe the stale context into here
+		push edx ; new context - we'll dupe the stale context into here
 		push eax ; original context - we just wrote to it
 		call dup_context
-		pop eax
-		pop ebx
+		pop edx  ; pop the original context into edx - we'll restore it now
+		pop eax 
 
-		; restore context expects to find a target context in ebx
+		; restore context expects to find a target context in edx
 		restore_context
 		mov eax, 0
 		ret
 
 asm_switch_to:
 		mov eax, [esp + 4] ; stale context
-		mov ebx, [esp + 8] ; target context
+		mov edx, [esp + 8] ; target context
 		save_context
 
-		; restore context expects to find a target context in ebx
+		; restore context expects to find a target context in edx
 		restore_context
 		mov eax, 1
 		ret
