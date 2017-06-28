@@ -9,6 +9,7 @@
 uint32_t swap_page[0x1000 >> 2];
 
 context_t all_tasks[NUM_TASKS];
+int previous_task = 0;
 int current_task = 0;
 
 int
@@ -18,13 +19,13 @@ is_ready_task(int tasknum)
     return ctx->ready;
 }
 
-context_t*
+int
 get_empty_task() {
     for (int i=current_task+1; i < current_task+NUM_TASKS; i++) {
         int tnum = i % NUM_TASKS;
         context_t *task = &all_tasks[tnum];
         if (task->cr3 == 0) {
-          return task;
+          return tnum;
         }
     }
     // @TODO: something should happen if you're out of tasks
@@ -33,31 +34,33 @@ get_empty_task() {
 void
 switch_executing_task(int target_task_num)
 {
-    context_t *stale_context = &all_tasks[current_task];
-    context_t *target_context = &all_tasks[target_task_num];
+    previous_task = current_task;
+    current_task = target_task_num;
 
-    asm_switch_to(stale_context, target_context);
+    asm_switch_to(&all_tasks[previous_task], &all_tasks[current_task]);
 
+    context_t *previous_task_struct = &all_tasks[previous_task];
     // We're now running target context,
     // so it shouldn't be in the task struct.
-    memset(target_context, 0, sizeof(*target_context));
+    memset(&all_tasks[current_task], 0, sizeof(all_tasks[0]));
     // We just saved to the stale context,
     // it's ready to be loaded at some point in the future.
-    stale_context->ready = 1;
-    current_task = target_task_num;
+    previous_task_struct->ready = 1;
 }
 
 /* Wraps asm_fork */
 int
 fork() {
-    context_t *original_context = &all_tasks[current_task];
-    context_t *new_context = get_empty_task();
-    int ret = asm_fork(original_context, new_context);
+    // the new task 
+    previous_task = get_empty_task();
 
+    int ret = asm_fork(&all_tasks[current_task], &all_tasks[previous_task]);
+
+    context_t *previous_task_struct = &all_tasks[previous_task];
     // We're still running original context,
     // so it shouldn't be in the task struct.
-    memset(original_context, 0, sizeof(*original_context));
-    new_context->ready = 1;
+    memset(&all_tasks[current_task], 0, sizeof(all_tasks[0]));
+    previous_task_struct->ready = 1;
     return ret;
 }
 

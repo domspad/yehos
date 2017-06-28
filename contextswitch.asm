@@ -38,7 +38,6 @@ kernel_esp dd 0x7ffff
 
 %macro restore_context 0
     mov eax, [edx]   ; ss
-    ; mov ecx, [edx+4] ; esp
     mov ecx, [edx+8] ; cr3
 
 		cli
