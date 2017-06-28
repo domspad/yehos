@@ -79,6 +79,7 @@ void
 idle() {
     while (1) {
         draw_spinner();
+        halt();
         yield();
     }
 }
@@ -88,9 +89,8 @@ static int spinner_idx = 0;
 
 void
 draw_spinner() {
-    int spinner_char = (spinner_idx / 5000) % 4;
-    vga_setchar(79, 0, spinner_chars[spinner_char], 0x03);
-    spinner_idx = (spinner_idx + 1) % 20000;
+    vga_setchar(79, 0, spinner_chars[spinner_idx], 0x03);
+    spinner_idx = (spinner_idx + 1) % 4;
 }
 
 int
