@@ -25,7 +25,7 @@ syscall_handler(int syscall_num, const void *parms)
             const int32_t *pRetcode = (const int32_t *) parms;
             int retcode = *pRetcode;
             kprintf("application exited with return code %d\n", retcode);
-            while (1) yield();
+            while (1) halt();
         }
         break;
 

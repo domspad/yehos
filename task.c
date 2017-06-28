@@ -62,7 +62,7 @@ fork() {
 }
 
 void
-proc_yield(void)
+yield(void)
 {
     for (int i=current_task+1; i < current_task+NUM_TASKS; i++) {
         int tnum = i % NUM_TASKS;

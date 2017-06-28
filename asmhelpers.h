@@ -28,7 +28,7 @@ struct exc_registers {
     u32 eax, eflags, eip, cs;
 };
 
-DONT_EMIT void yield()
+DONT_EMIT void halt()
 {
     asm volatile ("hlt");
 }

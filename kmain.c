@@ -41,7 +41,7 @@ kmain(void)
     mainptr_t entry = (mainptr_t) 0x01000000;
 
     kprintf("mmapped hello.bin\n");
-    proc_yield();
+    yield();
 
     (*entry)(0, NULL);
 

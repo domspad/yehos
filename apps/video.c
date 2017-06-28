@@ -24,7 +24,7 @@ void play_video(char * pic_index) {
 
     while(1) {
 //        usleep(300000);
-        yield();
+        halt();
         if (last_timer_index != timer_index) {
             last_timer_index = timer_index;
             if(!pause_set) {
