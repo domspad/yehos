@@ -260,15 +260,47 @@ int snprintf(char *buf, unsigned int sz, const char *fmt, ...)
 void c_print_num(int n) {
     char buffer[100];
     int len = snprintf(buffer, 100, "%d", n);
-
-    int i = 0;
-    while (i < len) {
-      write(buffer[i]);
-      i++;
-    }
-    
-    write(' ');
+    buffer[len] = '\n';
+    buffer[len+1] = '\0';
+    puts(buffer);
 
     return;
 }
 
+int c_atoi(char *p) {
+    int k = 0;
+    while (*p != '\0') {
+        k = (k<<3)+(k<<1)+(*p)-'0';
+        p++;
+     }
+     return k;
+}
+
+int c_compare_strings(char *first, char *second) {
+	 while (*first == *second) {
+      if (*first == '\0' || *second == '\0')
+         break;
+ 
+      first++;
+      second++;
+   }
+ 
+   if (*first == '\0' && *second == '\0')
+      return 0;
+   else
+      return -1;
+}
+
+// Places a word at *input_stream and returns the address of the new input pointer.
+char* c_consume_word(char *input_stream, char delimiter) {
+		while (*input_stream != '\0') {
+				if (*input_stream == delimiter) {
+						*input_stream = '\0';
+						input_stream++;
+						break;
+				}
+				input_stream++;
+		}
+
+		return input_stream;
+}

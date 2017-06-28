@@ -10,6 +10,8 @@ CFLAGS+=-isystem ..
 CFLAGS+=-O1
 CFLAGS+=-ggdb
 
+all: hello.bin txtplayr.bin forth.bin
+
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
 CROSS_CC = gcc
@@ -25,8 +27,6 @@ LD = i386-elf32-ld
 OBJDUMP = i386-elf32-objdump
 OBJCOPY = i386-elf32-objcopy
 endif
-
-all: hello.bin txtplayr.bin forth.bin
 
 .SECONDARY: hello.o crt0.o hello.lst txtplayr.lst
 

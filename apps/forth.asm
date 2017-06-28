@@ -1,241 +1,268 @@
 global main
 extern c_print_num
+extern c_atoi
+extern c_compare_strings
+extern c_consume_word
+extern readline
 
-INPUT:
-		dd "DOLI"
-		dd 10
-		dd "PRIN"
-		dd "BYE "
+%define TOS ebx						; holds the top value of the forth param stack.
+%define STACK_PTR esp 		; points to the top of the system stack,
+													; which contains the rest of the forth param stack.
+%define PC esi						; forth program counter
+%define R_STACK_PTR ebp		; point to the top of the return stack.
 
-INPUT_PTR dd INPUT
-
-RETURN_STACK:
-		dd 0x0
-		dd 0x0
-		dd 0x0
-		dd 0x0
-
-main:
-		; top level concepts in registers at all times
-		; return stackpointer - ebp
-		; data stack stackpointer - esp
-		; top of the stack value (TOS) - ebx
-		; forth program counter - esi
-		mov ebp, RETURN_STACK
-		mov esi, init
-		jmp NEXT
-
-%define HEADER_SIZE 16
-
-%define PREV_WORD 0
-
-%define NATIVE_HEADER $+HEADER_SIZE
-
-%define COMPOSITE_HEADER ENTER
-
-%macro HEADER 2-3 NATIVE_HEADER
-		dd %3            ; address of body
-		dd %1            ; name
-		dd PREV_WORD     ; link to prev defn
-		dd 0             ; immediate flag
-%define PREV_WORD %2
+%macro ppush 1
+		push TOS
+		mov TOS, %1
 %endmacro
 
-ENTER:
-		mov [ebp], esi
-		add ebp, 4
-		add ecx, HEADER_SIZE
-		mov esi, ecx
+%define HEADER_SIZE 16
+%define PREV_WORD 0
+%define NATIVE_HEADER $+HEADER_SIZE
+%define COMPOSITE_HEADER ENTER
+
+%macro HEADER 1-2 NATIVE_HEADER
+%defstr STR_NAME %1
+%1_NAME db STR_NAME, 0 ; allocate a variable-length name
+%1:
+	dd %2            ; address of body
+	dd %1_NAME       ; point to the name
+	dd PREV_WORD     ; link to prev defn
+	dd 1             ; immediate flag
+%define PREV_WORD %1
+%endmacro
+
+
+main:
+		mov R_STACK_PTR, RETURN_STACK
+		mov PC, init
 		jmp NEXT
 
-EXIT:
-		HEADER "EXIT", EXIT
-		sub ebp, 4
-		mov esi, [ebp]
+ENTER:
+		mov [R_STACK_PTR], PC
+		add R_STACK_PTR, 4
+		add ecx, HEADER_SIZE
+		mov PC, ecx
+		jmp NEXT
+
+HEADER EXIT
+		sub R_STACK_PTR, 4
+		mov PC, [R_STACK_PTR]
 		jmp NEXT
 
 NEXT:
-		mov ecx, [esi]
-		add esi, 4
+		mov ecx, [PC]
+		add PC, 4
 		jmp [ecx]
 
-BYE:
-		HEADER "BYE ", BYE
+HEADER BYE
 		cli
 		hlt
 
-DOLITERAL:
-		HEADER "DOLI", DOLITERAL
-		push ebx
-		mov ebx, [esi]
-		add esi, 4
+HEADER DOLITERAL
+		push TOS
+		mov TOS, [PC]
+		add PC, 4
 		jmp NEXT
 
-PRINT:
-		HEADER "PRIN", PRINT
-		push ebx ; move TOS to top of system stack
-						 ; so that it will be considered a param by c_print num
-		call c_print_num
-		pop ebx  ; get rid of param from system stack
-		pop ebx  ; pop the forth stack, print consumes arg
-		jmp NEXT
+%define WORD_NAME 4
+%define WORD_PREV 8
+%define WORD_IMMEDIATE_FLAG 12
 
-; ( word - addr )
-FIND:
-		HEADER "FIND", FIND
-		mov eax, [DICT]
-ASM_FIND_RECURSIVE:
-		add eax, 4
-		push ebx
-		mov ebx, 0
-		cmp [eax], ebx
-		pop ebx
-		je ASM_WORD_NOT_FOUND
-		cmp [eax], ebx
-		je ASM_FIND_MATCH_FOUND
-		; not found match
-		add eax, 4 ; EAX now points to the address of the previous word in the dictionary.
+
+; ( word - str|xt 0|-1|+1)
+HEADER FIND
+		mov eax, [LATEST]
+FIND_RECURSIVE:
+		push eax 						 ; store top of latest header
+		add eax, WORD_NAME
 		mov eax, [eax]
-		jmp ASM_FIND_RECURSIVE
-		; match found
-ASM_FIND_MATCH_FOUND:
-		push ebx
-		sub eax, 4
-		mov ebx, eax
+		push eax						 ; put ptr to current word name on sys stack
+		push TOS						 ; put ptr to input word name on sys stack
+		call c_compare_strings
+		cmp eax, 0					 ; c_compare_strings returns 0 if the strings are equal
+		pop eax
+		pop eax							 ; restore top of latest header to eax
+		pop eax 						 ; restore eax after function call
+		je FIND_NAME_MATCHED
+		jmp FIND_NAME_UNMATCHED
+FIND_NAME_MATCHED:
+		mov TOS, eax ; get rid of name and add xt onto stack
+		ppush [eax + WORD_IMMEDIATE_FLAG] ; also push immediate flag onto stack
 		jmp NEXT
-ASM_WORD_NOT_FOUND:
-		push ebx
-		mov ebx, 0
+FIND_NAME_UNMATCHED:
+		ppush 0					; We need to compare across registers so we push a zero into TOS
+		cmp [eax + WORD_PREV], TOS  ; see if it is the last word in the dictionary
+		pop TOS
+		je FIND_WORD_NOT_FOUND
+		jmp FIND_NEXT_WORD
+FIND_WORD_NOT_FOUND:
+    ppush 0
+		jmp NEXT
+FIND_NEXT_WORD:
+		mov eax, [eax + WORD_PREV] ; go to previous word
+		jmp FIND_RECURSIVE
+
+
+HEADER _BL
+		ppush ' '
 		jmp NEXT
 
-BLANK:
-		HEADER "BLAN", BLANK
-		push ebx
-		mov ebx, 0
-		jmp NEXT
-
+; currently: ( string from input stream - same word on stack )
+; eventually: ( delimiter on stack and chars from inputs stream - word on stack )
 ; Eventually this should create words by delimiting
 ; a char buffer by the delimiter on the stack.
-FWORD:
-		HEADER "WORD", FWORD
-		mov ebx, [INPUT_PTR]
+HEADER _WORD
+BREAKPOINT
+		mov eax, [INPUT_PTR]
+		mov eax, [eax] ; dereference twice to get the value in the input stream.
+		and eax, 0x000000FF
+		cmp eax, 0		 ; check if we're at the end of the input stream (marked by the null termination character)
+		je GET_WORD_FROM_STDIN
+		ppush [INPUT_PTR] ; push a pointer to the next thing in the input stream
+		push TOS 			 ; set up c call stack
+		call c_consume_word
+		mov [INPUT_PTR], eax
+		pop eax				 ; clear c call stack
+		pop eax				 ; clear delimiter from stack
 		jmp NEXT
-
-; ( 0 | addr -> num | execution ) 
-EXEC_OR_PUSH:
-		HEADER "EORP", EXEC_OR_PUSH
-		cmp ebx, 0
-		je ASM_PUSH_NUM
-		jmp ASM_EXECUTE
-ASM_PUSH_NUM:
-		pop ebx
-ASM_EXECUTE:
-		jmp [ebx]
-
-
-DUP:
-		HEADER "DUPL", DUP
-		push ebx
-		jmp NEXT
-
-STAR:
-		HEADER "STAR", STAR
+GET_WORD_FROM_STDIN:
+		mov eax, INPUT_STREAM
+		mov [INPUT_PTR], eax ; reset input pointer to beginning of input stream
+		push eax ; give input stream as param to readline
+		call readline
 		pop eax
-		mul ebx
-		mov ebx, eax
+		jmp [_WORD]
+
+
+; ( xt|name 0|1|-1 -> push num onto stack | execute word )
+HEADER EXEC_OR_PUSH
+		cmp TOS, 0
+		je EORP_PUSH_NUM
+		jmp EORP_EXECUTE
+
+EORP_PUSH_NUM:
+		mov eax, [esp]
+		push eax
+		call c_atoi ; Assume the string represents a number.
+		pop TOS     ; pop esp off
+		pop TOS			; Remove the string from the top of the system stack.
+		mov TOS, eax ; Replace the string on the top of the forth stack the the result of c_atoi.
+		jmp NEXT
+
+EORP_EXECUTE:
+		pop TOS ; get rid of flag
+		mov eax, [TOS]
+		mov ecx, TOS	; ecx must contain the xt of the subroutine
+									; this is usually set up by next and is expected
+									; by enter
+		pop TOS ; get rid of xt
+		jmp eax
+
+HEADER DUP
+		push TOS
+		jmp NEXT
+
+HEADER STAR
+		pop eax
+		mul TOS
+		mov TOS, eax
 		jmp NEXT
 
 ; ( a b - a b a )
-OVER:
-		HEADER "OVER", OVER
-		mov eax, [esp]
-		push ebx
-		mov ebx, eax
+HEADER OVER
+		mov eax, [STACK_PTR]
+		push TOS
+		mov TOS, eax
 		jmp NEXT
 
 ; ( a b - b a )
-SWAP:
-		HEADER "SWAP", SWAP
+HEADER SWAP
 		pop eax
-		push ebx
-		mov ebx, eax
+		push TOS
+		mov TOS, eax
 		jmp NEXT
 
 ; ( a b c - b c a )
-ROT:
-		HEADER "ROTA", ROT
-		mov eax, ebx
-		pop ebx
+HEADER ROT
+		mov eax, TOS
+		pop TOS
 		push eax
 
-		mov eax, ebx
-		add esp, 4
-		pop ebx ; a is correct position
+		mov eax, TOS
+		add STACK_PTR, 4
+		pop TOS ; a is in correct position
 		push eax ; c is in correct position
-		sub esp, 4
+		sub STACK_PTR, 4
 		jmp NEXT
 
 ; ( a - )
 ; alternate syntax for dd DROP_ASM
-DROP:
-		HEADER "DROP", DROP
-		pop ebx
+HEADER DROP
+		pop TOS
 		jmp NEXT
 
-SQUARED:
-		HEADER "SQUA", SQUARED, COMPOSITE_HEADER
+HEADER SQUARED, COMPOSITE_HEADER
 		dd DUP, STAR, EXIT
 
 ; ( a b - b )
-NIP:
-		HEADER "NIPP", NIP, COMPOSITE_HEADER
+HEADER NIP, COMPOSITE_HEADER
 		dd SWAP, DROP, EXIT
 
 ; ( a b - b a b )
-TUCK:
-		HEADER "TUCK", TUCK, COMPOSITE_HEADER
+HEADER TUCK, COMPOSITE_HEADER
 		dd SWAP, OVER, EXIT
 
 ; >r (a - R: a)
-PUSHR:
-		HEADER "PUSR", PUSHR
-		mov [edx], ebx
+HEADER PUSHR
+		mov [edx], TOS
 		add edx, 4
-		pop ebx
+		pop TOS
 		jmp NEXT
 
 ; r> ( R: a - a )
-POPR:
-		HEADER "POPR", POPR
-		push ebx
+HEADER POPR
+		push TOS
 		sub edx, 4 ; edx point at the top of the stack (which is empty)
 							 ; we need to reference the most recently pushed item
-		mov ebx, [edx]
+		mov TOS, [edx]
 		jmp NEXT
 
 ; r@ ( R: a - a R: a )
-PEEKR:
-		HEADER "PEKR", PEEKR
-		push ebx
+HEADER PEEKR
+		push TOS
 		sub edx, 4
-		mov ebx, [edx]
+		mov TOS, [edx]
 		add edx, 4
 		jmp NEXT
 
-DICT dd PREV_WORD
+HEADER PRINT
+		push TOS ; move TOS to top of system stack
+						 ; so that it will be considered a param by c_print_num
+		call c_print_num
+		pop TOS  ; get rid of param from system stack
+		pop TOS  ; pop the forth stack, print consumes arg
+		jmp NEXT
 
-INTERPRET:
-		dd ENTER, BLANK, FWORD, FIND, EXEC_OR_PUSH, EXIT
+LATEST dd PREV_WORD
+
+HEADER INTERPRET, COMPOSITE_HEADER
+		dd _BL, _WORD, FIND, EXEC_OR_PUSH, EXIT
+
+HEADER BRANCH
+		mov eax, [PC]
+		sub eax, 4
+		add PC, eax
+		jmp NEXT
+
+HEADER QUIT, COMPOSITE_HEADER
+		dd INTERPRET, BRANCH, -4, EXIT
 
 init:
-		dd DOLITERAL
-		dd 42
-		dd DOLITERAL
-		dd 123
-		dd NIP
-		dd PRINT
-		dd DOLITERAL
-		dd "DOLI"
-		dd FIND
-		dd PRINT
-		dd BYE
+		dd QUIT
+
+; Input stream becomes the buffer where new lines of input are stored.
+INPUT_PTR dd INPUT_STREAM
+INPUT_STREAM times 256 db 0
+
+RETURN_STACK times 256 db 0
