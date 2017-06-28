@@ -78,14 +78,24 @@ yield(void)
 void
 idle() {
     while (1) {
-        // TODO put spinny on visible screen
-        /* yield(); */
+        draw_spinner();
+        yield();
     }
+}
+
+static char spinner_chars[4] = {'-','/','|','\\'};
+static int spinner_idx = 0;
+
+void
+draw_spinner() {
+    int spinner_char = (spinner_idx / 5000) % 4;
+    vga_setchar(79, 0, spinner_chars[spinner_char], 0x03);
+    spinner_idx = (spinner_idx + 1) % 20000;
 }
 
 int
 ptable_is_present(pagetable_entry_t entry) {
-  return entry & 1;
+    return entry & 1;
 }
 
 void

@@ -153,7 +153,7 @@ readline(char *buf) {
             buf[index++] = c;
             read_count++;
         } else {
-            // TODO: put some printf debugging
+            yield();
         }
     }
     return read_count;
