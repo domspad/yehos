@@ -2,7 +2,7 @@
 
 global asm_switch_to
 global asm_fork
-extern clone_page_directory
+extern dup_context
 
 kernel_ss dw 0x10
 kernel_esp dd 0x7ffff
@@ -26,12 +26,13 @@ kernel_esp dd 0x7ffff
     push ds
 
 		; store stack pointer and cr3 in task struct
-		mov ax, ss
-    mov [ebx], ax
-    mov [ebx+4], esp
+		; clobber ecx now to move ss around - we already pushed it
+		mov cx, ss
+    mov [eax], cx
+    mov [eax+4], esp
 
-		mov eax, cr3
-    mov [ebx+8], eax
+		mov ecx, cr3
+    mov [eax+8], ecx
 %endmacro
 
 
@@ -74,29 +75,34 @@ kernel_esp dd 0x7ffff
 ;   load context from the stack (it's the one we just saved)
 asm_fork:
 		; context_t is first argument
-		mov ebx, [esp + 4]
+		mov eax, [esp + 4] ; original context
+		mov ebx, [esp + 8] ; new context
 		save_context
 
 		; switch to the kernel stack
 		; we'll switch back to the application stack when we load the new context
-		mov ax, [kernel_ss]
-		mov ss, ax
+		mov cx, [kernel_ss]
+		mov ss, cx
 		mov esp, [kernel_esp]
 
 		; we know out of save context, ebx is the context we want to save to
-		push ebx
-		call clone_page_directory
+		push ebx ; new context - we'll dupe the stale context into here
+		push eax ; original context - we just wrote to it
+		call dup_context
+		pop eax
 		pop ebx
 
+		; restore context expects to find a target context in ebx
 		restore_context
 		mov eax, 0
 		ret
 
 asm_switch_to:
+		mov eax, [esp + 4] ; stale context
+		mov ebx, [esp + 8] ; target context
 		save_context
 
-; ebx is the context_t *
-asm_restore_context:
+		; restore context expects to find a target context in ebx
 		restore_context
 		mov eax, 1
 		ret

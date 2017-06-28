@@ -22,8 +22,9 @@ void save_context(int tasknum, void *func);
 extern void asm_swap_context(context_t *fromctx, context_t *toctx);
 extern void asm_save_context(context_t *fromctx, void *eip);
 
-void clone_page_directory(context_t *new_ctx);
+void proc_yield(void);
 
+void dup_context(context_t *stale_ctx, context_t *new_ctx);
 void test_clone_page_directory(void);
 
 #endif

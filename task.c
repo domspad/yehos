@@ -18,29 +18,50 @@ is_ready_task(int tasknum)
     return ctx->ready;
 }
 
+context_t*
+get_empty_task() {
+    for (int i=current_task+1; i < current_task+NUM_TASKS; i++) {
+        int tnum = i % NUM_TASKS;
+        context_t *task = &all_tasks[tnum];
+        if (task->cr3 == 0) {
+          return task;
+        }
+    }
+    // @TODO: something should happen if you're out of tasks
+}
+
 void
 switch_executing_task(int target_task_num)
 {
     context_t *stale_context = &all_tasks[current_task];
     context_t *target_context = &all_tasks[target_task_num];
 
-    stale_context->ready = 1;
     asm_switch_to(stale_context, target_context);
 
-    memset(stale_context, 0, sizeof(*stale_context));
+    // We're now running target context,
+    // so it shouldn't be in the task struct.
+    memset(target_context, 0, sizeof(*target_context));
+    // We just saved to the stale context,
+    // it's ready to be loaded at some point in the future.
+    stale_context->ready = 1;
 }
 
 /* Wraps asm_fork */
 int
 fork() {
-    // @TODO: I think this should get the first empty task
-    context_t *stale_context = &all_tasks[current_task];
-    int ret = asm_fork(stale_context);
+    context_t *original_context = &all_tasks[current_task];
+    context_t *new_context = get_empty_task();
+    int ret = asm_fork(original_context, new_context);
+
+    // We're still running original context,
+    // so it shouldn't be in the task struct.
+    memset(original_context, 0, sizeof(*original_context));
+    new_context->ready = 1;
     return ret;
 }
 
 void
-yield(void)
+proc_yield(void)
 {
     for (int i=current_task+1; i < current_task+NUM_TASKS; i++) {
         int tnum = i % NUM_TASKS;
@@ -54,7 +75,7 @@ void
 idle() {
     while (1) {
         // TODO put spinny on visible screen
-        yield();
+        /* yield(); */
     }
 }
 
@@ -74,6 +95,12 @@ make_ptable_entries_cow(ptable_index_t start_index) {
             base_ptable[i] = make_cow(base_ptable[i]);
         }
     }
+}
+
+void
+dup_context(context_t *stale_ctx, context_t *new_ctx) {
+    memcpy(new_ctx, stale_ctx, sizeof(*stale_ctx));
+    clone_page_directory(new_ctx);
 }
 
 void
