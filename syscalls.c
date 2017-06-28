@@ -3,6 +3,7 @@
 #include "virtualmem.h"
 #include "globals.h"
 #include "memlib.h"
+#include "task.h"
 
 // BEWARE
 #define do_mmap mmap
@@ -102,6 +103,12 @@ syscall_handler(int syscall_num, const void *parms)
                 videomem[i * 2 + 24 * SCREEN_LINE_SIZE] = ' ';
                 videomem[i * 2 + 24 * SCREEN_LINE_SIZE + 1] = 0xf;
             }
+
+            return;
+        }
+    case 7: // yield
+        {
+            yield();
 
             return;
         }

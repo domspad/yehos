@@ -21,6 +21,9 @@ void
 scroll();
 
 void
+yield();
+
+void
 setcursor(int x, int y);
 
 int

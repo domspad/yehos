@@ -61,6 +61,13 @@ scroll()
     (void) syscall(6, NULL);
 }
 
+void
+yield()
+{
+    (void) syscall(7, NULL);
+
+}
+
 void clear_screen() {
     int col, row;
     for (row = 0; row < 25; row++) {
