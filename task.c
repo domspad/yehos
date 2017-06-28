@@ -44,6 +44,7 @@ switch_executing_task(int target_task_num)
     // We just saved to the stale context,
     // it's ready to be loaded at some point in the future.
     stale_context->ready = 1;
+    current_task = target_task_num;
 }
 
 /* Wraps asm_fork */
