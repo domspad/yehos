@@ -113,7 +113,6 @@ HEADER _BL
 ; Eventually this should create words by delimiting
 ; a char buffer by the delimiter on the stack.
 HEADER _WORD
-BREAKPOINT
 		mov eax, [INPUT_PTR]
 		mov eax, [eax] ; dereference twice to get the value in the input stream.
 		and eax, 0x000000FF
@@ -135,23 +134,19 @@ GET_WORD_FROM_STDIN:
 		jmp [_WORD]
 
 
-; ( xt|name 0|1|-1 -> push num onto stack | execute word )
-HEADER EXEC_OR_PUSH
-		cmp TOS, 0
-		je EORP_PUSH_NUM
-		jmp EORP_EXECUTE
-
-EORP_PUSH_NUM:
+; ( str num -> num onto stack )
+HEADER PUSHNUM
 		mov eax, [esp]
 		push eax
+		push TOS
 		call c_atoi ; Assume the string represents a number.
 		pop TOS     ; pop esp off
 		pop TOS			; Remove the string from the top of the system stack.
 		mov TOS, eax ; Replace the string on the top of the forth stack the the result of c_atoi.
 		jmp NEXT
 
-EORP_EXECUTE:
-		pop TOS ; get rid of flag
+; ( xt -> execute token )
+HEADER EXECUTE
 		mov eax, [TOS]
 		mov ecx, TOS	; ecx must contain the xt of the subroutine
 									; this is usually set up by next and is expected
@@ -247,9 +242,24 @@ HEADER PRINT
 LATEST dd PREV_WORD
 
 HEADER INTERPRET, COMPOSITE_HEADER
-		dd _BL, _WORD, FIND, EXEC_OR_PUSH, EXIT
+		; dd _BL, _WORD, FIND, EXEC_OR_PUSH, EXIT
+		dd _BL, _WORD, FIND, QBRANCH, 20, EXECUTE, BRANCH, 12, PUSHNUM, EXIT;
 
 HEADER BRANCH
+		mov eax, [PC]
+		sub eax, 4
+		add PC, eax
+		jmp NEXT
+
+; ( -1 | 0 | +1 , (next val in instream) - execute next instruction or (val/4) instructions ahead )
+HEADER QBRANCH
+		cmp TOS, 0
+		pop TOS ; clears flag
+		je jump_using_instream
+continue_ahead
+		add PC, 4
+		jmp NEXT
+jump_using_instream		
 		mov eax, [PC]
 		sub eax, 4
 		add PC, eax
