@@ -11,12 +11,14 @@
 #define PRESENT_AND_RW 0x03
 #define COPY_ON_WRITE 0x200
 #define DISK_MEMORY_ADDR_FLAG 0x40000000
-
 #define ENTRIES_PER_PAGE 1024
 
 #define KERNEL_STACK_ADDR 0x7f000
 #define VIRTUAL_STACK_ADDR 0xffbff000
 #define STACK_SIZE 0xfff
+
+#define STACK_PTABLE_ADDR 0xffffe000
+#define SWAP_ADDR 0xffbfe000
 
 typedef uint32_t page[0xfff >> 2];
 
@@ -191,29 +193,30 @@ make_ptable_entries_cow(ptable_index_t start_index) {
 }
 
 physaddr_t
+copy_to_new_physical_page(virtaddr_t source) {
+    physaddr_t new_physaddr = get_unused_page();
+
+    // SWAP_ADDR is the virtual address we reserve for copying to arbitrary
+    // physical memory.
+    set_ptable_entry(SWAP_ADDR, new_physaddr);
+    asm volatile ( "invlpg (%0)" : : "b"(SWAP_ADDR) : "memory" );
+    memcpy((void *) SWAP_ADDR, (void *) source, 4096);
+    return new_physaddr;
+}
+
+physaddr_t
 clone_page_directory()
 {
     virtaddr_t *current_pagedir = (void *) 0xfffff000;
 
-    // Copy the old page directory to a known physical address.
-    // This will become our new page directory.
-    physaddr_t new_cr3 = get_unused_page();
-    virtaddr_t *new_pagedir = (void *) 0xffbfd000;
-    set_ptable_entry((virtaddr_t) new_pagedir, new_cr3);
-    memcpy(new_pagedir, current_pagedir, 4096);
+    // Copy the stack and the page table that refers to it.
+    physaddr_t new_phys_stack = copy_to_new_physical_page(VIRTUAL_STACK_ADDR);
+    physaddr_t new_phys_stack_ptable = copy_to_new_physical_page(STACK_PTABLE_ADDR);
 
-    // Copy stack to swap page.
-    // We're assuming the stack only occupies a single page.
-    physaddr_t new_phys_stack = get_unused_page();
-    set_ptable_entry(SWAP_STACK, new_phys_stack);
-    memcpy((void *) SWAP_STACK, (void *) VIRTUAL_STACK_ADDR, STACK_SIZE);
-
-    // Copy the page table that references the stack to a swap page
-    virtaddr_t *current_stack_ptable = (void *) 0xffffe000;
-    virtaddr_t *swap_stack_ptable = (void *) 0xffbfc000;
-    physaddr_t new_phys_stack_ptable = get_unused_page();
-    set_ptable_entry((virtaddr_t) swap_stack_ptable, new_phys_stack_ptable);
-    memcpy(swap_stack_ptable, current_stack_ptable, 4096);
+    physaddr_t new_cr3 = copy_to_new_physical_page((virtaddr_t) current_pagedir);
+    // The new page physical page directory is mapped to the swap page out of
+    // copy_to_new_physical_page. We can use that fact to configure the new pagedir.
+    virtaddr_t *new_pagedir = (void *) SWAP_ADDR;
 
     // Mark pagetables and the pages they refer to as COW starting from the
     // first non-id mapped page up to but not including the pagetable that
@@ -227,11 +230,12 @@ clone_page_directory()
         }
     }
 
-    // the physical swap stack becomes the real stack for the current address space
-    virtaddr_t stack_ptable_entry = ptable[VIRTUAL_STACK_ADDR >> 12];
-    set_ptable_entry((virtaddr_t) current_stack_ptable, new_phys_stack_ptable);
+    // The new physical stack becomes the real stack for the current address space.
+    set_ptable_entry(STACK_PTABLE_ADDR, new_phys_stack_ptable);
     set_ptable_entry(VIRTUAL_STACK_ADDR, new_phys_stack);
-    ptable[SWAP_STACK >> 12] = 0x0000000;
+
+    // We're done with the swap page for now - don't point it to any physical memory.
+    set_ptable_entry(SWAP_ADDR, 0x00000000);
 
     new_pagedir[1023] = make_present_and_rw(new_cr3);
     return new_cr3;
