@@ -195,10 +195,12 @@ clone_page_directory()
 {
     virtaddr_t *current_pagedir = (void *) 0xfffff000;
 
-    // Insert our new pagedir into the current address space so we can write to it.
+    // Copy the old page directory to a known physical address.
+    // This will become our new page directory.
     physaddr_t new_cr3 = get_unused_page();
     virtaddr_t *new_pagedir = (void *) 0xffbfd000;
     set_ptable_entry((virtaddr_t) new_pagedir, new_cr3);
+    memcpy(new_pagedir, current_pagedir, 4096);
 
     // Copy stack to swap page.
     // We're assuming the stack only occupies a single page.
@@ -213,23 +215,15 @@ clone_page_directory()
     set_ptable_entry((virtaddr_t) swap_stack_ptable, new_phys_stack_ptable);
     memcpy(swap_stack_ptable, current_stack_ptable, 4096);
 
-    // Make cow from the first non-identity mapped page up to (but not including) the page directory itself.
-    ptable_index_t first_nonident_ptable_idx = 1;
-    // exclude the page directory itself and the page table that refers to the stack
-    for (int i = 0; i < ENTRIES_PER_PAGE-1; ++i) {
-        // Copy identity-mapped pages to new pages directory without COW.
-        if (i < first_nonident_ptable_idx) {
-            new_pagedir[i] = current_pagedir[i];
-        } else if (i == 1022) {
-            // ptable that refers to the stack
-            new_pagedir[i] = current_pagedir[i]; 
-        } else {
-            if (page_is_present(current_pagedir[i])) {
-                make_ptable_entries_cow((ptable_index_t) i*ENTRIES_PER_PAGE);
-                current_pagedir[i] = new_pagedir[i] = make_cow(current_pagedir[i]);
-            } else {
-                current_pagedir[i] = new_pagedir[i];
-            }
+    // Mark pagetables and the pages they refer to as COW starting from the
+    // first non-id mapped page up to but not including the pagetable that
+    // refers to the stack and the page directory itself.
+    for (int i = 1; i < ENTRIES_PER_PAGE-2; ++i) {
+        if (page_is_present(current_pagedir[i])) {
+            // We multiply the index into the page directory by the number of
+            // entries per page to get an index into the page table.
+            make_ptable_entries_cow((ptable_index_t) i*ENTRIES_PER_PAGE);
+            current_pagedir[i] = new_pagedir[i] = make_cow(current_pagedir[i]);
         }
     }
 
