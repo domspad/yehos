@@ -231,8 +231,6 @@ clone_page_directory()
 
     // the physical swap stack becomes the real stack for the current address space
     virtaddr_t stack_ptable_entry = ptable[BASE_OF_VIRTUAL_STACK >> 12];
-    asm volatile ( "invlpg (%0)" : : "b"(BASE_OF_VIRTUAL_STACK) : "memory" );
-    asm volatile ( "invlpg (%0)" : : "b"(stack_ptable_entry) : "memory" );
     set_ptable_entry((virtaddr_t) current_stack_ptable, new_phys_stack_ptable);
     set_ptable_entry(BASE_OF_VIRTUAL_STACK, new_phys_stack);
     ptable[SWAP_STACK >> 12] = 0x0000000;
