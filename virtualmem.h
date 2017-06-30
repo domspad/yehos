@@ -6,7 +6,6 @@
 #define BASE_OF_VIRTUAL_STACK 0xffbff000
 #define STACK_SIZE 0xfff
 #define DISTANCE_TO_VIRTUAL_STACK (BASE_OF_VIRTUAL_STACK - BASE_OF_KERNEL_STACK)
-#define PTABLE_ADDR 0xffc00000
 #define SWAP_STACK 0xffbfe000
 #include "ata.h"
 

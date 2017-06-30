@@ -12,6 +12,8 @@
 #define COPY_ON_WRITE 0x200
 #define DISK_MEMORY_ADDR_FLAG 0x40000000
 
+#define ENTRIES_PER_PAGE 1024
+
 typedef uint32_t page[0xfff >> 2];
 
 int swap_page_index = 0;
@@ -176,12 +178,10 @@ is_cow(pagetable_entry_t entry)
 void
 make_ptable_entries_cow(ptable_index_t start_index) {
     ptable_index_t stack_ptable_index = BASE_OF_VIRTUAL_STACK >> 12;
-    virtaddr_t *base_ptable = (void *) 0xffc00000;
 
-    uint32_t page_size = 1024;
-    for (int i = start_index; i < start_index + page_size; i++) {
+    for (int i = start_index; i < start_index + ENTRIES_PER_PAGE; i++) {
         if (i != stack_ptable_index) {
-            base_ptable[i] = make_cow(base_ptable[i]);
+            ptable[i] = make_cow(ptable[i]);
         }
     }
 }
@@ -211,10 +211,8 @@ clone_page_directory()
 
     // Make cow from the first non-identity mapped page up to (but not including) the page directory itself.
     ptable_index_t first_nonident_ptable_idx = 1;
-    uint32_t page_size = 1024;
-    virtaddr_t *base_ptable = (void *) 0xffc00000;
     // exclude the page directory itself and the page table that refers to the stack
-    for (int i = 0; i < page_size-1; ++i) {
+    for (int i = 0; i < ENTRIES_PER_PAGE-1; ++i) {
         // Copy identity-mapped pages to new pages directory without COW.
         if (i < first_nonident_ptable_idx) {
             new_pagedir[i] = current_pagedir[i];
@@ -223,7 +221,7 @@ clone_page_directory()
             new_pagedir[i] = current_pagedir[i]; 
         } else {
             if (page_is_present(current_pagedir[i])) {
-                make_ptable_entries_cow((ptable_index_t) i*page_size);
+                make_ptable_entries_cow((ptable_index_t) i*ENTRIES_PER_PAGE);
                 current_pagedir[i] = new_pagedir[i] = make_cow(current_pagedir[i]);
             } else {
                 current_pagedir[i] = new_pagedir[i];
@@ -232,12 +230,12 @@ clone_page_directory()
     }
 
     // the physical swap stack becomes the real stack for the current address space
-    virtaddr_t stack_ptable_entry = base_ptable[BASE_OF_VIRTUAL_STACK >> 12];
+    virtaddr_t stack_ptable_entry = ptable[BASE_OF_VIRTUAL_STACK >> 12];
     asm volatile ( "invlpg (%0)" : : "b"(BASE_OF_VIRTUAL_STACK) : "memory" );
     asm volatile ( "invlpg (%0)" : : "b"(stack_ptable_entry) : "memory" );
     set_ptable_entry((virtaddr_t) current_stack_ptable, new_phys_stack_ptable);
     set_ptable_entry(BASE_OF_VIRTUAL_STACK, new_phys_stack);
-    base_ptable[SWAP_STACK >> 12] = 0x0000000;
+    ptable[SWAP_STACK >> 12] = 0x0000000;
 
     new_pagedir[1023] = make_present_and_rw(new_cr3);
     return new_cr3;
