@@ -14,6 +14,10 @@
 
 #define ENTRIES_PER_PAGE 1024
 
+#define KERNEL_STACK_ADDR 0x7f000
+#define VIRTUAL_STACK_ADDR 0xffbff000
+#define STACK_SIZE 0xfff
+
 typedef uint32_t page[0xfff >> 2];
 
 int swap_page_index = 0;
@@ -47,13 +51,13 @@ setup_paging()
 void
 setup_virtual_stack()
 {
-    uint32_t *source = (void *) BASE_OF_KERNEL_STACK;
-    uint32_t *dest = (void *) BASE_OF_VIRTUAL_STACK;
+    uint32_t *source = (void *) KERNEL_STACK_ADDR;
+    uint32_t *dest = (void *) VIRTUAL_STACK_ADDR;
     memcpy(dest, source, STACK_SIZE);
 
     // asm call to move esp up to the virtual stack
-    uint32_t distance = DISTANCE_TO_VIRTUAL_STACK;
-    asm volatile  ("add %0, %%esp" : : "b" (distance));
+    uint32_t stack_ptr_change = VIRTUAL_STACK_ADDR - KERNEL_STACK_ADDR;
+    asm volatile  ("add %0, %%esp" : : "b" (stack_ptr_change));
 
 }
 
@@ -177,7 +181,7 @@ is_cow(pagetable_entry_t entry)
 
 void
 make_ptable_entries_cow(ptable_index_t start_index) {
-    ptable_index_t stack_ptable_index = BASE_OF_VIRTUAL_STACK >> 12;
+    ptable_index_t stack_ptable_index = VIRTUAL_STACK_ADDR >> 12;
 
     for (int i = start_index; i < start_index + ENTRIES_PER_PAGE; i++) {
         if (i != stack_ptable_index) {
@@ -200,7 +204,7 @@ clone_page_directory()
     // We're assuming the stack only occupies a single page.
     physaddr_t new_phys_stack = get_unused_page();
     set_ptable_entry(SWAP_STACK, new_phys_stack);
-    memcpy((void *) SWAP_STACK, (void *) BASE_OF_VIRTUAL_STACK, STACK_SIZE);
+    memcpy((void *) SWAP_STACK, (void *) VIRTUAL_STACK_ADDR, STACK_SIZE);
 
     // Copy the page table that references the stack to a swap page
     virtaddr_t *current_stack_ptable = (void *) 0xffffe000;
@@ -230,9 +234,9 @@ clone_page_directory()
     }
 
     // the physical swap stack becomes the real stack for the current address space
-    virtaddr_t stack_ptable_entry = ptable[BASE_OF_VIRTUAL_STACK >> 12];
+    virtaddr_t stack_ptable_entry = ptable[VIRTUAL_STACK_ADDR >> 12];
     set_ptable_entry((virtaddr_t) current_stack_ptable, new_phys_stack_ptable);
-    set_ptable_entry(BASE_OF_VIRTUAL_STACK, new_phys_stack);
+    set_ptable_entry(VIRTUAL_STACK_ADDR, new_phys_stack);
     ptable[SWAP_STACK >> 12] = 0x0000000;
 
     new_pagedir[1023] = make_present_and_rw(new_cr3);
