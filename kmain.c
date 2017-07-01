@@ -29,13 +29,13 @@ kmain(void)
     ata_disk *d = &disks[0];
     mmap_disk(d);
 
-    mmap("HELLO.BIN", 0x01000000);
-    kprintf("first byte: %d\n", *(char *)0x01000000);
+    mmap("FORTH.BIN", 0x01000000);
+
+    vga_cls();
 
     mainptr_t entry = (mainptr_t) 0x01000000;
     (*entry)(0, NULL);
     kprintf("kernel initialized\n");
-    setup_timer(30);
 
     while (1) yield();
 

@@ -7,8 +7,10 @@ CFLAGS+=-nostartfiles
 CFLAGS+=-nodefaultlibs
 CFLAGS+=-fno-strict-aliasing
 CFLAGS+=-isystem ..
-CFLAGS+=-O2
+CFLAGS+=-O1
 CFLAGS+=-ggdb
+
+all: hello.bin txtplayr.bin forth.bin
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
@@ -26,17 +28,18 @@ OBJDUMP = i386-elf32-objdump
 OBJCOPY = i386-elf32-objcopy
 endif
 
-all: hello.bin txtplayr.bin
-
 .SECONDARY: hello.o crt0.o hello.lst txtplayr.lst
 
-
+forth.elf: forth.o forthprint.o
 txtplayr.elf: txtplayer.o video.o
 
 hello.elf: hello.o
 
 %.elf: ../libyehos.o | crt0.o
 	$(LD) -m elf_i386 -T linker.ld -o $@ $^
+
+%.o: %.asm
+	nasm $(ASMFLAGS) -f elf -o $@ $<
 
 %.lst: %.elf
 	$(OBJDUMP) -d $< > $@

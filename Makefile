@@ -56,7 +56,7 @@ yehos.iso: kernel.bin bootloader.bin apps
 		-c boot.cat \
 		-no-emul-boot \
 		-input-charset=iso8859-1 \
-		-o $@ bootloader.bin kernel.bin vga/starwars.vga apps/hello.bin apps/txtplayr.bin
+		-o $@ bootloader.bin kernel.bin vga/starwars.vga apps/hello.bin apps/txtplayr.bin apps/forth.bin
 
 isopatcher: isopatcher.c iso9660.c iso9660.h
 	$(CC) -ggdb -o $@ $^
