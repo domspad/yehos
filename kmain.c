@@ -40,12 +40,6 @@ kmain(void)
     mmap("HELLO.BIN", 0x01000000);
     mainptr_t entry = (mainptr_t) 0x01000000;
 
-    kprintf("mmapped hello.bin\n");
-    yield();
-
     (*entry)(0, NULL);
-
-    kprintf("kernel initialized\n");
-    setup_timer(30);
 }
 
