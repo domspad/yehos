@@ -35,7 +35,6 @@ execute the commands in the file manually.
 0x7c00 - 0x7dff: boot sector
 0x8000 kernel
 
-0x7f000 - 0x7ffff kernel stack
 0x80000 starting page directory
 0x81000 first page table
 0x100000 page pool

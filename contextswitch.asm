@@ -4,9 +4,6 @@ global asm_switch_to
 global asm_fork
 extern dup_context
 
-kernel_ss dw 0x10
-kernel_esp dd 0x7ffff
-
 ; ebx is context_t
 %macro save_context 0
 		; starting in user stack
@@ -77,12 +74,6 @@ asm_fork:
 		mov eax, [esp + 4] ; original context
 		mov edx, [esp + 8] ; new context
 		save_context
-
-		; switch to the kernel stack
-		; we'll switch back to the application stack when we load the new context
-		mov cx, [kernel_ss]
-		mov ss, cx
-		mov esp, [kernel_esp]
 
 		; we know out of save context, ebx is the context we want to save to
 		push edx ; new context - we'll dupe the stale context into here
