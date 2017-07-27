@@ -32,14 +32,15 @@ kmain(void)
     ata_disk *d = &disks[0];
     mmap_disk(d);
 
+    vga_cls()
+
     int r = fork();
     if (r) {
         idle();
     }
 
-    mmap("HELLO.BIN", 0x01000000);
+    mmap("FORTH.BIN", 0x01000000);
     mainptr_t entry = (mainptr_t) 0x01000000;
-
     (*entry)(0, NULL);
 }
 
