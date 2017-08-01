@@ -41,7 +41,7 @@ void exception_handler(u32 exc, u32 errcode,
             {
                 kprintf("\n\nKERNEL PANIC! This might help: ");
                 dump_regs(regs);
-                while (1) yield();
+                while (1) halt();
             }
     };
 }

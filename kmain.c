@@ -6,10 +6,12 @@
 #include "kernel.h"
 #include "virtualmem.h"
 #include "memlib.h"
+#include "task.h"
 
 extern char START_BSS[], END_BSS[];
 void setup_interrupts(void *idtaddr);
 void setup_timer(int timer_hz);
+void idle();
 
 typedef int (*mainptr_t)(int argc, char **argv);
 
@@ -24,19 +26,20 @@ kmain(void)
 
     setup_interrupts((void *) 0x1000);
     setup_paging();
+    setup_virtual_stack();
 
     init_ata();
     ata_disk *d = &disks[0];
     mmap_disk(d);
 
+    int r = fork();
+    if (r) {
+        idle();
+    }
+
     mmap("FORTH.BIN", 0x01000000);
-
     vga_cls();
-
     mainptr_t entry = (mainptr_t) 0x01000000;
     (*entry)(0, NULL);
-    kprintf("kernel initialized\n");
-
-    while (1) yield();
-
 }
+

@@ -11,7 +11,7 @@ KERNEL_CFLAGS += -fno-strict-aliasing
 KERNEL_CFLAGS += -std=gnu99
 KERNEL_CFLAGS += -isystem .
 
-KERNEL_OBJS= kb.o vgatext.o exceptions.o syscalls.o int_stage0.o memlib.o interrupts.o ata.o iso9660.o kprint.o debug.o virtualmem.o
+KERNEL_OBJS= kb.o vgatext.o exceptions.o syscalls.o int_stage0.o memlib.o interrupts.o ata.o iso9660.o kprint.o debug.o virtualmem.o task.o contextswitch.o
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
