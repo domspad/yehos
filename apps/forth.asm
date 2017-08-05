@@ -265,8 +265,14 @@ jump_using_instream
 		add PC, eax
 		jmp NEXT
 
+; ( 0 | a -- 0 | (a, a) )
+HEADER ?DUP, COMPOSITE_HEADER
+		dd DUP, QBRANCH, 12, DUP, EXIT
+
 HEADER QUIT, COMPOSITE_HEADER
 		dd INTERPRET, BRANCH, -4, EXIT
+
+LATEST dd PREV_WORD
 
 init:
 		dd QUIT
