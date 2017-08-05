@@ -269,11 +269,17 @@ void c_print_num(int n) {
 
 int c_atoi(char *p) {
     int k = 0;
+    int neg = 1;
+    if (*p == '-') {
+        neg = -1;
+        p++;
+    }
     while (*p != '\0') {
         k = (k<<3)+(k<<1)+(*p)-'0';
         p++;
-     }
-     return k;
+    }
+    k = k*neg;
+    return k;
 }
 
 int c_compare_strings(char *first, char *second) {
