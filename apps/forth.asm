@@ -269,6 +269,18 @@ jump_using_instream
 HEADER ?DUP, COMPOSITE_HEADER
 		dd DUP, QBRANCH, 12, DUP, EXIT
 
+; ( -- 0 | 1 )
+; pushes 1 if compile mode else 0
+STATE_VAR dd 0
+HEADER STATE
+		ppush STATE_VAR
+		jmp NEXT
+
+; ( addr -- val )
+HEADER @
+		mov TOS, [TOS]
+		jmp NEXT
+
 HEADER QUIT, COMPOSITE_HEADER
 		dd INTERPRET, BRANCH, -4, EXIT
 
