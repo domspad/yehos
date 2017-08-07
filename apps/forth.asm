@@ -251,14 +251,15 @@ HEADER BRANCH
 		jmp NEXT
 
 ; ( -1 | 0 | +1 , (next val in instream) - execute next instruction or (val/4) instructions ahead )
+; jumps ahead if there's a 0 on the stack
 HEADER QBRANCH
 		cmp TOS, 0
 		pop TOS ; clears flag
 		je jump_using_instream
-continue_ahead
+continue_ahead:
 		add PC, 4
 		jmp NEXT
-jump_using_instream		
+jump_using_instream:
 		mov eax, [PC]
 		sub eax, 4
 		add PC, eax
