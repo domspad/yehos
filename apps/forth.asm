@@ -20,15 +20,16 @@ extern readline
 %define PREV_WORD 0
 %define NATIVE_HEADER $+HEADER_SIZE
 %define COMPOSITE_HEADER ENTER
+%define IMMEDIATE 1
 
-%macro HEADER 1-2 NATIVE_HEADER
+%macro HEADER 1-3 NATIVE_HEADER, -1
 %defstr STR_NAME %1
 %1_NAME db STR_NAME, 0 ; allocate a variable-length name
 %1:
 	dd %2            ; address of body
 	dd %1_NAME       ; point to the name
 	dd PREV_WORD     ; link to prev defn
-	dd 1             ; immediate flag
+	dd %3            ; immediate flag
 %define PREV_WORD %1
 %endmacro
 
