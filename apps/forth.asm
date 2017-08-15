@@ -22,9 +22,14 @@ extern readline
 %define NATIVE_HEADER $+HEADER_SIZE
 %define COMPOSITE_HEADER ENTER
 %define IMMEDIATE -1
+%define NOT_IMMEDIATE 1
 
-%macro HEADER 1-3 NATIVE_HEADER, 1
-%defstr STR_NAME %1
+%macro HEADER 1-4 NATIVE_HEADER, NOT_IMMEDIATE
+%ifstr %4
+	%define STR_NAME %4
+%else
+	%defstr STR_NAME %1
+%endif
 %1_NAME db STR_NAME, 0 ; allocate a variable-length name
 %1:
 	dd %2            ; address of body
