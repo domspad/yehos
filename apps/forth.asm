@@ -76,25 +76,25 @@ HEADER DOLITERAL
 HEADER FIND
 		mov eax, [LATEST]
 FIND_RECURSIVE:
-		push eax 						 ; store top of latest header
+		push eax 							; store top of latest header
 		add eax, WORD_NAME
 		mov eax, [eax]
-		push eax						 ; put ptr to current word name on sys stack
-		push TOS						 ; put ptr to input word name on sys stack
+		push eax							; put ptr to current word name on sys stack
+		push TOS							; put ptr to input word name on sys stack
 		call c_compare_strings
-		cmp eax, 0					 ; c_compare_strings returns 0 if the strings are equal
+		cmp eax, 0						; c_compare_strings returns 0 if the strings are equal
 		pop eax
-		pop eax							 ; restore top of latest header to eax
-		pop eax 						 ; restore eax after function call
+		pop eax								; restore top of latest header to eax
+		pop eax 							; restore eax after function call
 		je FIND_NAME_MATCHED
 		jmp FIND_NAME_UNMATCHED
 FIND_NAME_MATCHED:
-		mov TOS, eax ; get rid of name and add xt onto stack
+		mov TOS, eax					; get rid of name and add xt onto stack
 		ppush [eax + WORD_IMMEDIATE_FLAG] ; also push immediate flag onto stack
 		jmp NEXT
 FIND_NAME_UNMATCHED:
-		ppush 0					; We need to compare across registers so we push a zero into TOS
-		cmp [eax + WORD_PREV], TOS  ; see if it is the last word in the dictionary
+		ppush 0								; We need to compare across registers so we push a zero into TOS
+		cmp [eax + WORD_PREV], TOS	; see if it is the last word in the dictionary
 		pop TOS
 		je FIND_WORD_NOT_FOUND
 		jmp FIND_NEXT_WORD
@@ -102,7 +102,7 @@ FIND_WORD_NOT_FOUND:
     ppush 0
 		jmp NEXT
 FIND_NEXT_WORD:
-		mov eax, [eax + WORD_PREV] ; go to previous word
+		mov eax, [eax + WORD_PREV]	; go to previous word
 		jmp FIND_RECURSIVE
 
 
@@ -135,25 +135,23 @@ GET_WORD_FROM_STDIN:
 		pop eax
 		jmp [_WORD]
 
-
 ; ( str num -> num onto stack )
 HEADER PUSHNUM
 		mov eax, [esp]
 		push eax
 		push TOS
-		call c_atoi ; Assume the string represents a number.
-		pop TOS     ; pop esp off
-		pop TOS			; Remove the string from the top of the system stack.
-		mov TOS, eax ; Replace the string on the top of the forth stack the the result of c_atoi.
+		call c_atoi		; Assume the string represents a number.
+		pop TOS				; pop esp off
+		pop TOS				; Remove the string from the top of the system stack.
+		mov TOS, eax	; Replace the string on the top of the forth stack the the result of c_atoi.
 		jmp NEXT
 
 ; ( xt -> execute token )
 HEADER EXECUTE
 		mov eax, [TOS]
 		mov ecx, TOS	; ecx must contain the xt of the subroutine
-									; this is usually set up by next and is expected
-									; by enter
-		pop TOS ; get rid of xt
+									; this is usually set up by next and is expected by enter
+		pop TOS				; get rid of xt
 		jmp eax
 
 HEADER DUP
@@ -359,9 +357,9 @@ HEADER LITERAL, COMPOSITE_HEADER
 HEADER COMPILE
 		mov eax, [HERE]
 		mov [eax], TOS
-		pop TOS												; clear the XT off the stack
+		pop TOS										; clear the XT off the stack
 		add eax, 4
-		mov [HERE], eax	; advance the eod ptr
+		mov [HERE], eax						; advance the eod ptr
 		jmp NEXT
 
 ; execute is 1 else compile
