@@ -111,7 +111,7 @@ FIND_NEXT_WORD:
 		jmp FIND_RECURSIVE
 
 
-HEADER _BL
+HEADER _BL, NATIVE_HEADER, NOT_IMMEDIATE, 'BL'
 		ppush ' '
 		jmp NEXT
 
@@ -119,7 +119,7 @@ HEADER _BL
 ; eventually: ( delimiter on stack and chars from inputs stream - word on stack )
 ; Eventually this should create words by delimiting
 ; a char buffer by the delimiter on the stack.
-HEADER _WORD
+HEADER _WORD, NATIVE_HEADER, NOT_IMMEDIATE, 'WORD'
 		mov eax, [INPUT_PTR]
 		mov eax, [eax] ; dereference twice to get the value in the input stream.
 		and eax, 0x000000FF
@@ -163,7 +163,7 @@ HEADER DUP
 		push TOS
 		jmp NEXT
 
-HEADER STAR
+HEADER STAR, NATIVE_HEADER, NOT_IMMEDIATE, '*'
 		pop eax
 		mul TOS
 		mov TOS, eax
@@ -214,14 +214,14 @@ HEADER TUCK, COMPOSITE_HEADER
 		dd SWAP, OVER, EXIT
 
 ; >r (a - R: a)
-HEADER PUSHR
+HEADER PUSHR, NATIVE_HEADER, NOT_IMMEDIATE, '>R'
 		mov [edx], TOS
 		add edx, 4
 		pop TOS
 		jmp NEXT
 
 ; r> ( R: a - a )
-HEADER POPR
+HEADER POPR, NATIVE_HEADER, NOT_IMMEDIATE, 'R>'
 		push TOS
 		sub edx, 4 ; edx point at the top of the stack (which is empty)
 							 ; we need to reference the most recently pushed item
@@ -229,14 +229,14 @@ HEADER POPR
 		jmp NEXT
 
 ; r@ ( R: a - a R: a )
-HEADER PEEKR
+HEADER PEEKR, NATIVE_HEADER, NOT_IMMEDIATE, 'R@'
 		push TOS
 		sub edx, 4
 		mov TOS, [edx]
 		add edx, 4
 		jmp NEXT
 
-HEADER PRINT
+HEADER PRINT, NATIVE_HEADER, NOT_IMMEDIATE, '.'
 		push TOS ; move TOS to top of system stack
 						 ; so that it will be considered a param by c_print_num
 		call c_print_num
@@ -244,7 +244,7 @@ HEADER PRINT
 		pop TOS  ; pop the forth stack, print consumes arg
 		jmp NEXT
 
-HEADER LT0
+HEADER LT0, NATIVE_HEADER, NOT_IMMEDIATE, '<0'
 		cmp TOS, 0
 		jl push1
 push0:
@@ -262,7 +262,7 @@ HEADER BRANCH
 
 ; ( -1 | 0 | +1 , (next val in instream) - execute next instruction or (val/4) instructions ahead )
 ; jumps ahead if there's a 0 on the stack
-HEADER QBRANCH
+HEADER ?BRANCH
 		cmp TOS, 0
 		pop TOS ; clears flag
 		je jump_using_instream
@@ -277,7 +277,7 @@ jump_using_instream:
 
 ; ( 0 | a -- 0 | (a, a) )
 HEADER ?DUP, COMPOSITE_HEADER
-		dd DUP, QBRANCH, 12, DUP, EXIT
+		dd DUP, ?BRANCH, 12, DUP, EXIT
 
 ; ( -- 0 | 1 )
 ; pushes 1 if compile mode else 0
@@ -292,24 +292,24 @@ HEADER @
 		jmp NEXT
 
 ; set interpret state
-HEADER LEFT_BRACKET, NATIVE_HEADER, IMMEDIATE
+HEADER LEFT_BRACKET, NATIVE_HEADER, IMMEDIATE, '['
 		mov eax, 0
 		mov [STATE_VAR], eax
 		jmp NEXT
 
 ; set compile state
-HEADER RIGHT_BRACKET, NATIVE_HEADER, IMMEDIATE
+HEADER RIGHT_BRACKET, NATIVE_HEADER, IMMEDIATE, ']'
 		mov eax, 1
 		mov [STATE_VAR], eax
 		jmp NEXT
 
-HEADER COLON, COMPOSITE_HEADER
+HEADER COLON, COMPOSITE_HEADER, NOT_IMMEDIATE, ':'
 		dd CREATE, RIGHT_BRACKET, EXIT
 
-HEADER SEMICOLON, COMPOSITE_HEADER, IMMEDIATE
-		dd BRACKET_TICK, EXIT, COMPILE, EXIT
+HEADER SEMICOLON, COMPOSITE_HEADER, IMMEDIATE, ';'
+		dd BRACKET_TICK, EXIT, COMMA, EXIT
 
-HEADER BRACKET_TICK
+HEADER BRACKET_TICK, COMPOSITE_HEADER, NOT_IMMEDIATE, "[']"
 		dd EXIT
 
 ; ( "<name>" -- )
@@ -345,8 +345,8 @@ HEADER CREATE_FROM_STACK
 		mov [LATEST], eax					; xt of the current word is the new value of latest
 		add eax, 8								; move eax back to the end of the dictionary
 		add eax, 4
-		mov edx, 1
-		mov [eax], edx						; immediate flag defaults to 1
+		mov edx, NOT_IMMEDIATE
+		mov [eax], edx						; new word default to not immediate
 		add eax, 4
 
 		; set the new end of dictionary
@@ -359,7 +359,7 @@ HEADER LITERAL, COMPOSITE_HEADER
 
 ; ( addr -- )
 ; adds the address of a word to the end of the dictionary
-HEADER COMPILE
+HEADER COMMA, NATIVE_HEADER, NOT_IMMEDIATE, ','
 		mov eax, [HERE]
 		mov [eax], TOS
 		pop TOS										; clear the XT off the stack
@@ -370,19 +370,19 @@ HEADER COMPILE
 ; execute is 1 else compile
 ; ( -1 | 1 )
 HEADER EXEC_OR_COMPILE, COMPOSITE_HEADER
-		dd LT0, QBRANCH, 20, EXECUTE, BRANCH, 12, COMPILE, EXIT
+		dd LT0, ?BRANCH, 20, EXECUTE, BRANCH, 12, COMMA, EXIT
 
 HEADER INTERPRET_WORD, COMPOSITE_HEADER
-		dd _BL, _WORD, FIND, QBRANCH, 20, EXECUTE, BRANCH, 12, PUSHNUM, EXIT
+		dd _BL, _WORD, FIND, ?BRANCH, 20, EXECUTE, BRANCH, 12, PUSHNUM, EXIT
 
 HEADER COMPILE_WORD, COMPOSITE_HEADER
-		dd _BL, _WORD, FIND, ?DUP, QBRANCH, 20, EXEC_OR_COMPILE, BRANCH, 16, PUSHNUM, LITERAL, EXIT
+		dd _BL, _WORD, FIND, ?DUP, ?BRANCH, 20, EXEC_OR_COMPILE, BRANCH, 16, PUSHNUM, LITERAL, EXIT
 
 HEADER QUIT, COMPOSITE_HEADER
 		dd COMPILE_OR_INTERPRET, BRANCH, -4, EXIT
 
 HEADER COMPILE_OR_INTERPRET, COMPOSITE_HEADER
-		dd STATE, @, QBRANCH, 20, COMPILE_WORD, BRANCH, 12, INTERPRET_WORD, EXIT
+		dd STATE, @, ?BRANCH, 20, COMPILE_WORD, BRANCH, 12, INTERPRET_WORD, EXIT
 
 LATEST dd PREV_WORD
 
