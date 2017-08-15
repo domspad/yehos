@@ -310,3 +310,18 @@ char* c_consume_word(char *input_stream, char delimiter) {
 
 		return input_stream;
 }
+
+int c_strcpy(char* dest, char* src) {
+    int len = 0;
+    while (*src != '\0') {
+        *dest = *src;
+        len++;
+        src++;
+        dest++;
+    }
+    *dest = *src;
+    len++;
+    src++;
+    dest++;
+    return len;
+}

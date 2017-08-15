@@ -3,6 +3,7 @@ extern c_print_num
 extern c_atoi
 extern c_compare_strings
 extern c_consume_word
+extern c_strcpy
 extern readline
 
 %define TOS ebx						; holds the top value of the forth param stack.
@@ -20,9 +21,9 @@ extern readline
 %define PREV_WORD 0
 %define NATIVE_HEADER $+HEADER_SIZE
 %define COMPOSITE_HEADER ENTER
-%define IMMEDIATE 1
+%define IMMEDIATE -1
 
-%macro HEADER 1-3 NATIVE_HEADER, -1
+%macro HEADER 1-3 NATIVE_HEADER, 1
 %defstr STR_NAME %1
 %1_NAME db STR_NAME, 0 ; allocate a variable-length name
 %1:
@@ -240,9 +241,15 @@ HEADER PRINT
 		pop TOS  ; pop the forth stack, print consumes arg
 		jmp NEXT
 
-HEADER INTERPRET_WORD, COMPOSITE_HEADER
-		; dd _BL, _WORD, FIND, EXEC_OR_PUSH, EXIT
-		dd _BL, _WORD, FIND, QBRANCH, 20, EXECUTE, BRANCH, 12, PUSHNUM, EXIT
+HEADER LT0
+		cmp TOS, 0
+		jl push1
+push0:
+		mov TOS, 0
+		jmp NEXT
+push1:
+		mov TOS, 1
+		jmp NEXT
 
 HEADER BRANCH
 		mov eax, [PC]
@@ -281,11 +288,95 @@ HEADER @
 		mov TOS, [TOS]
 		jmp NEXT
 
-HEADER QUIT, COMPOSITE_HEADER
-		dd COMPILE_OR_INTERPRET, BRANCH, -4, EXIT
+; set interpret state
+HEADER LEFT_BRACKET, NATIVE_HEADER, IMMEDIATE
+		mov eax, 0
+		mov [STATE_VAR], eax
+		jmp NEXT
+
+; set compile state
+HEADER RIGHT_BRACKET, NATIVE_HEADER, IMMEDIATE
+		mov eax, 1
+		mov [STATE_VAR], eax
+		jmp NEXT
+
+HEADER COLON, COMPOSITE_HEADER
+		dd CREATE, RIGHT_BRACKET, EXIT
+
+HEADER SEMICOLON, COMPOSITE_HEADER, IMMEDIATE
+		dd BRACKET_TICK, EXIT, COMPILE, EXIT
+
+HEADER BRACKET_TICK
+		dd EXIT
+
+; ( "<name>" -- )
+; creates a dictionary entry for <name>
+HEADER CREATE, COMPOSITE_HEADER
+		dd _BL, _WORD, CREATE_FROM_STACK, EXIT
+
+; ( str -- )
+; takes a ptr to a name (str) from the top of the stack
+; and creates a dictionary header pointing that that name
+HEADER CREATE_FROM_STACK
+		; store the string above the dictionary entry
+		push TOS									; move word ptr from top of 4th stack to top of c param stack
+		mov ecx, [HERE]						; store the addr of the str_name
+		push ecx									; push eod ptr to c param stack
+		call c_strcpy							; copy word from input stream to eod
+															; strlen is in eax after return
+		pop TOS
+		pop TOS										; restore the stack
+
+		; create the header
+		add eax, [HERE]						; eax held the return value of c_strcpy - the length of the new word name
+															; we add [HERE] so it holds the new addr of the end of the dictionary
+		mov edx, ENTER
+		mov [eax], edx
+		add eax, 4
+		mov edx, [HERE]
+		mov [eax], edx						; ptr to string name
+		add eax, 4
+		mov ecx, [LATEST]					; xt of the previous word
+		mov [eax], ecx
+		sub eax, 8
+		mov [LATEST], eax					; xt of the current word is the new value of latest
+		add eax, 8								; move eax back to the end of the dictionary
+		add eax, 4
+		mov edx, 1
+		mov [eax], edx						; immediate flag defaults to 1
+		add eax, 4
+
+		; set the new end of dictionary
+		mov [HERE], eax
+		jmp NEXT
+
+; compiles a doliteral along with the number to be pushed
+HEADER LITERAL, COMPOSITE_HEADER
+		dd EXIT
+
+; ( addr -- )
+; adds the address of a word to the end of the dictionary
+HEADER COMPILE
+		mov eax, [HERE]
+		mov [eax], TOS
+		pop TOS												; clear the XT off the stack
+		add eax, 4
+		mov [HERE], eax	; advance the eod ptr
+		jmp NEXT
+
+; execute is 1 else compile
+; ( -1 | 1 )
+HEADER EXEC_OR_COMPILE, COMPOSITE_HEADER
+		dd LT0, QBRANCH, 20, EXECUTE, BRANCH, 12, COMPILE, EXIT
+
+HEADER INTERPRET_WORD, COMPOSITE_HEADER
+		dd _BL, _WORD, FIND, QBRANCH, 20, EXECUTE, BRANCH, 12, PUSHNUM, EXIT
 
 HEADER COMPILE_WORD, COMPOSITE_HEADER
-		dd EXIT
+		dd _BL, _WORD, FIND, ?DUP, QBRANCH, 20, EXEC_OR_COMPILE, BRANCH, 16, PUSHNUM, LITERAL, EXIT
+
+HEADER QUIT, COMPOSITE_HEADER
+		dd COMPILE_OR_INTERPRET, BRANCH, -4, EXIT
 
 HEADER COMPILE_OR_INTERPRET, COMPOSITE_HEADER
 		dd STATE, @, QBRANCH, 20, COMPILE_WORD, BRANCH, 12, INTERPRET_WORD, EXIT
@@ -300,3 +391,7 @@ INPUT_PTR dd INPUT_STREAM
 INPUT_STREAM times 256 db 0
 
 RETURN_STACK times 256 db 0
+
+; holds the address of the end of dictionary
+HERE dd HERE+4
+times 1024 db 0
