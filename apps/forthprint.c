@@ -325,3 +325,9 @@ int c_strcpy(char* dest, char* src) {
     dest++;
     return len;
 }
+
+int c_load_dictionary(void* input_ptr) {
+    /* void *ptr = mmap(input_ptr, -1, 0, 0, "STARWARS.VGA", 0); */
+    mmap(input_ptr, 2048, 0, 0, "DICT.FTH", 0);
+    return 0;
+}

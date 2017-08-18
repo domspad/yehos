@@ -4,6 +4,7 @@ extern c_atoi
 extern c_compare_strings
 extern c_consume_word
 extern c_strcpy
+extern c_load_dictionary
 extern readline
 
 %define TOS ebx						; holds the top value of the forth param stack.
@@ -41,6 +42,9 @@ extern readline
 
 
 main:
+		push INPUT_PTR
+		call c_load_dictionary
+		pop eax
 		mov R_STACK_PTR, RETURN_STACK
 		mov PC, init
 		jmp NEXT
@@ -391,7 +395,7 @@ init:
 
 ; Input stream becomes the buffer where new lines of input are stored.
 INPUT_PTR dd INPUT_STREAM
-INPUT_STREAM times 256 db 0
+INPUT_STREAM times 2048 db 0
 
 RETURN_STACK times 256 db 0
 
