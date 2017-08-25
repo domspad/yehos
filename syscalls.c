@@ -112,6 +112,10 @@ syscall_handler(int syscall_num, const void *parms)
 
             return;
         }
+    case 8: // get_timer_index
+        {
+            return timer_index;
+        }
     default:
         kprintf("system call %d not supported\n", syscall_num);
         break;

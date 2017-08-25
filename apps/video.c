@@ -1,12 +1,4 @@
-
-#include <string.h>
-#if 0
-#include "ourtypes.h"
-#include "vgatext.h"
-#include "kernel.h"
-#include "asmhelpers.h"
-#include "globals.h"
-#endif
+#include <yehos.h>
 
 static volatile char *videomem = (volatile char *) 0xb8000;
 
@@ -19,24 +11,19 @@ volatile int seek = 0;
 void play_video(char * pic_index) {
 
     show_image(pic_index, 4000);
-#if 0
-    int last_timer_index = timer_index;
+    int last_timer_index = get_timer_index();
 
     while(1) {
-//        usleep(300000);
-        halt();
-        if (last_timer_index != timer_index) {
-            last_timer_index = timer_index;
-            if(!pause_set) {
-                show_image(pic_index + seek * 4000, 4000);
-                seek++;
-            }
+        yield();
+        if (last_timer_index != get_timer_index()) {
+            last_timer_index = get_timer_index();
+            show_image(pic_index + seek * 4000, 4000);
+            seek++;
 
             // boundaries
-            if(seek < 0) seek = 0;
-            if (seek > 13460) seek=13460;
+            if (seek < 0) seek = 0;
+            if (seek > 13460) seek = 13460;
         }
     }
-#endif
 
 }

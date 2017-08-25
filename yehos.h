@@ -23,6 +23,9 @@ scroll();
 void
 yield();
 
+int
+get_timer_index();
+
 void
 setcursor(int x, int y);
 

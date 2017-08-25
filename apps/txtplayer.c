@@ -1,7 +1,4 @@
 #include <yehos.h>
-#include <string.h>
-
-#include "video.h"
 
 #define MOVIE_ADDR 0x70000000
 
