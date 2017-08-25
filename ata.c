@@ -235,7 +235,7 @@ int ata_status_notbusy(ata_disk *d)
 {
     u8 st = ata_in8(d, CB_ALT_STATUS);
     int ntries;
-    for (ntries=0; ntries < 10000; ntries++)
+    for (ntries=0; ntries < 100000; ntries++)
     {
         u8 status = ata_in8(d, CB_ALT_STATUS);
         if (status & CB_STATUS_ERR)
