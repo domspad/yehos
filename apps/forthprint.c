@@ -300,7 +300,7 @@ int c_compare_strings(char *first, char *second) {
 // Places a word at *input_stream and returns the address of the new input pointer.
 char* c_consume_word(char *input_stream, char delimiter) {
 		while (*input_stream != '\0') {
-				if (*input_stream == delimiter) {
+				if (*input_stream == delimiter || *input_stream == '\n') {
 						*input_stream = '\0';
 						input_stream++;
 						break;
@@ -326,8 +326,7 @@ int c_strcpy(char* dest, char* src) {
     return len;
 }
 
-int c_load_dictionary(void* input_ptr) {
-    /* void *ptr = mmap(input_ptr, -1, 0, 0, "STARWARS.VGA", 0); */
-    mmap(input_ptr, 2048, 0, 0, "DICT.FTH", 0);
-    return 0;
+void c_load_dictionary(void* input_ptr) {
+    mmap(0x7000000, 1, 0, 0, "DICT.FTH", 0);
+    c_strcpy(input_ptr, 0x7000000);
 }

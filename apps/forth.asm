@@ -42,7 +42,7 @@ extern readline
 
 
 main:
-		push INPUT_PTR
+		push INPUT_STREAM
 		call c_load_dictionary
 		pop eax
 		mov R_STACK_PTR, RETURN_STACK
