@@ -71,15 +71,23 @@ HEADER BYE
 		hlt
 
 HEADER DOLITERAL
-		push TOS
-		mov TOS, [PC]
+		ppush [PC]
 		add PC, 4
+		jmp NEXT
+
+HEADER LITERAL
+		mov ecx, [HERE]								; addr of end of dict
+		mov eax, DOLITERAL					; address of body (xt)
+		mov [ecx], eax								; compile it
+		add ecx, 4										; increment the dict
+		mov [ecx], TOS								; compile the literal val
+		add ecx, 4
+		mov [HERE], ecx								; reset the end of dict
 		jmp NEXT
 
 %define WORD_NAME 4
 %define WORD_PREV 8
 %define WORD_IMMEDIATE_FLAG 12
-
 
 ; ( word - str|xt 0|-1|+1)
 HEADER FIND
@@ -356,10 +364,6 @@ HEADER CREATE_FROM_STACK
 		; set the new end of dictionary
 		mov [HERE], eax
 		jmp NEXT
-
-; compiles a doliteral along with the number to be pushed
-HEADER LITERAL, COMPOSITE_HEADER
-		dd EXIT
 
 ; ( addr -- )
 ; adds the address of a word to the end of the dictionary
