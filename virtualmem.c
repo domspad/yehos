@@ -97,7 +97,7 @@ handle_page_fault()
     }
     else if ((ptable_entry >> 28) == 4) {
         // "Use the fours"
-        uint32_t lba = (ptable_entry & ~(uint32_t) 0xf0000000) >> 4;
+        uint32_t lba = (ptable_entry & ~(uint32_t) 0xf0000000) >> 12;
         ata_disk *d = &disks[0];
         char *diskbuf = (void *) 0x90000;
         while (atapi_read_lba(d, diskbuf, 0xffff, lba, 2) < 0) {
@@ -115,7 +115,7 @@ mmap_disk(ata_disk *d) {
     for (uint32_t i = 0; i < npages; i++) {
         uint32_t lba = i * page_size / d->sector_size;
         uint32_t page_table_index = i + (ISO_START >> 12);
-        ptable[page_table_index] = DISK_MEMORY_ADDR_FLAG + (lba << 4); // 0x4[lba]0
+        ptable[page_table_index] = DISK_MEMORY_ADDR_FLAG + (lba << 12); // 0x4[lba]000
     }
 }
 
@@ -147,7 +147,7 @@ mmap(char *filename, uint32_t virt_addr){
     // mmap the file to the given virt addr using "the fours" scheme.
     // (assumes ratio of sector size to page size is 1 : 2
     for(uint32_t lba = 0; lba < num_lbas; lba += 2)
-        ptable[(virt_addr >> 12) + lba/2] = DISK_MEMORY_ADDR_FLAG + ((first_lba + lba) << 4); //0x4[lba]0
+        ptable[(virt_addr >> 12) + lba/2] = DISK_MEMORY_ADDR_FLAG + ((first_lba + lba) << 12); //0x4[lba]000
     return 0;
 }
 

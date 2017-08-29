@@ -68,6 +68,11 @@ yield()
 
 }
 
+int
+get_timer_index() {
+    return (int) syscall(8, NULL);
+}
+
 void clear_screen() {
     int col, row;
     for (row = 0; row < 25; row++) {
