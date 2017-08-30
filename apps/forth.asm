@@ -175,6 +175,11 @@ HEADER DUP
 		push TOS
 		jmp NEXT
 
+HEADER PLUS, NATIVE_HEADER, NOT_IMMEDIATE, '+'
+		pop eax
+		add TOS, eax
+		jmp NEXT
+
 HEADER STAR, NATIVE_HEADER, NOT_IMMEDIATE, '*'
 		pop eax
 		mul TOS
@@ -303,6 +308,14 @@ HEADER @
 		mov TOS, [TOS]
 		jmp NEXT
 
+; ( x a-addr -- )
+HEADER BANG, NATIVE_HEADER, NOT_IMMEDIATE, '!'
+		mov eax, [esp]
+		mov [TOS], eax
+		pop TOS
+		pop TOS
+		jmp NEXT
+
 ; set interpret state
 HEADER LEFT_BRACKET, NATIVE_HEADER, IMMEDIATE, '['
 		mov eax, 0
@@ -391,6 +404,11 @@ HEADER QUIT, COMPOSITE_HEADER
 
 HEADER COMPILE_OR_INTERPRET, COMPOSITE_HEADER
 		dd STATE, @, ?BRANCH, 20, COMPILE_WORD, BRANCH, 12, INTERPRET_WORD, EXIT
+
+HEADER F_LATEST, NATIVE_HEADER, NOT_IMMEDIATE, 'LATEST'
+latest_label:
+		ppush [LATEST]
+		jmp NEXT
 
 LATEST dd PREV_WORD
 
