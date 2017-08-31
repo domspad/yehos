@@ -91,7 +91,7 @@ HEADER LITERAL
 
 ; ( word - str|xt 0|-1|+1)
 HEADER FIND
-		mov eax, [LATEST]
+		mov eax, [LATEST_VAR]
 FIND_RECURSIVE:
 		push eax 							; store top of latest header
 		add eax, WORD_NAME
@@ -359,10 +359,10 @@ HEADER CREATE_FROM_STACK
 		mov edx, [HERE]
 		mov [eax], edx						; ptr to string name
 		add eax, 4
-		mov ecx, [LATEST]					; xt of the previous word
+		mov ecx, [LATEST_VAR]					; xt of the previous word
 		mov [eax], ecx
 		sub eax, 8
-		mov [LATEST], eax					; xt of the current word is the new value of latest
+		mov [LATEST_VAR], eax					; xt of the current word is the new value of latest
 		add eax, 8								; move eax back to the end of the dictionary
 		add eax, 4
 		mov edx, NOT_IMMEDIATE
@@ -400,11 +400,11 @@ HEADER QUIT, COMPOSITE_HEADER
 HEADER COMPILE_OR_INTERPRET, COMPOSITE_HEADER
 		dd STATE, @, ?BRANCH, 20, COMPILE_WORD, BRANCH, 12, INTERPRET_WORD, EXIT
 
-HEADER F_LATEST, NATIVE_HEADER, NOT_IMMEDIATE, 'LATEST'
-		ppush [LATEST]
+HEADER LATEST
+		ppush [LATEST_VAR]
 		jmp NEXT
 
-LATEST dd PREV_WORD
+LATEST_VAR dd PREV_WORD
 
 init:
 		dd QUIT
