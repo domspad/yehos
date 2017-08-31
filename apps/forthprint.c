@@ -312,18 +312,12 @@ char* c_consume_word(char *input_stream, char delimiter) {
 }
 
 int c_strcpy(char* dest, char* src) {
-    int len = 0;
-    while (*src != '\0') {
-        *dest = *src;
-        len++;
-        src++;
-        dest++;
+    int len;
+    for (len = 0; *src; len++) {
+        *dest++ = *src++;
     }
-    *dest = *src;
-    len++;
-    src++;
-    dest++;
-    return len;
+    *dest = '\0';
+    return len+1;
 }
 
 void c_load_dictionary(void* input_ptr) {
