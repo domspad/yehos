@@ -269,11 +269,17 @@ void c_print_num(int n) {
 
 int c_atoi(char *p) {
     int k = 0;
+    int neg = 1;
+    if (*p == '-') {
+        neg = -1;
+        p++;
+    }
     while (*p != '\0') {
         k = (k<<3)+(k<<1)+(*p)-'0';
         p++;
-     }
-     return k;
+    }
+    k = k*neg;
+    return k;
 }
 
 int c_compare_strings(char *first, char *second) {
@@ -294,7 +300,7 @@ int c_compare_strings(char *first, char *second) {
 // Places a word at *input_stream and returns the address of the new input pointer.
 char* c_consume_word(char *input_stream, char delimiter) {
 		while (*input_stream != '\0') {
-				if (*input_stream == delimiter) {
+				if (*input_stream == delimiter || *input_stream == '\n') {
 						*input_stream = '\0';
 						input_stream++;
 						break;
@@ -303,4 +309,18 @@ char* c_consume_word(char *input_stream, char delimiter) {
 		}
 
 		return input_stream;
+}
+
+int c_strcpy(char* dest, char* src) {
+    int len;
+    for (len = 0; *src; len++) {
+        *dest++ = *src++;
+    }
+    *dest = '\0';
+    return len+1;
+}
+
+void c_load_dictionary(void* input_ptr) {
+    mmap(0x7000000, 1, 0, 0, "DICT.FTH", 0);
+    c_strcpy(input_ptr, 0x7000000);
 }
