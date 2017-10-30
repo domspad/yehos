@@ -1,7 +1,5 @@
-
-
 # Yehos
-## an operating system for the people
+## An operating system for the people
 
 We are building an operating system from scratch under the guidance of @saulpw and his work on [frotzos](https://github.com/saulpw/frotzos). This is our story...
 
@@ -17,9 +15,11 @@ We are building an operating system from scratch under the guidance of @saulpw a
 
 ## Building
 
-Linux users shouldn't have any problem building the system. However, Macs will have some difficulty. For this reason, it is suggested that Macs first build a [cross-compiler](https://en.wikipedia.org/wiki/Cross_compiler). This will allow them to generate 32-bit ELF binary files.
+Linux users can simply run `make`. When developing applications, it's necessary to first Make the application and then include it in the ISO. To do this, run `make` first inside the application directory and then again from the project root.
 
-so Macs... it you can either:
+It is suggested that Macs first build a [cross-compiler](https://en.wikipedia.org/wiki/Cross_compiler). This will allow them to generate 32-bit ELF binary files.
+
+Mac users can either:
 
 run `sudo yehos/tools/build/cross_compiler.sh` (the cross compiler will be installed to `/opt/cross/`)
 
@@ -31,19 +31,19 @@ execute the commands in the file manually.
 
 ### Physical Memory
 
-? - 0x6000: bootstack
-0x7c00 - 0x7dff: boot sector
-0x8000 kernel
-
-0x80000 starting page directory
-0x81000 first page table
-0x100000 page pool
+* ? - 0x6000: bootstack
+* 0x7c00 - 0x7dff: boot sector
+* 0x8000 kernel
+* 0x80000 starting page directory
+* 0x81000 first page table
+* 0x100000 page pool
 
 ### Virtual Memory
-0 - 0x100000: identity mapped to physical memory
-0x100000 - ?: disk iso
-0x1000000: entry point to applications
-0xffbfe000 - 0xffbfefff: reserved for copying to physical memory
-0xffbff000 - 0xffbfffff: application stack
-0xffc00000 - end: page table
+
+* 0 - 0x100000: identity mapped to physical memory
+* 0x100000 - ?: disk iso
+* 0x1000000: entry point to applications
+* 0xffbfe000 - 0xffbfefff: reserved for copying to physical memory
+* 0xffbff000 - 0xffbfffff: application stack
+* 0xffc00000 - end: page table
 
