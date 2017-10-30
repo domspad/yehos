@@ -41,6 +41,20 @@ or
 
 execute the commands in the file manually. 
 
+## Running
+
+`make run` will run Yehos normally.
+
+To debug Yehos with GDB, run
+```
+qemu-system-i386 -s -S -cdrom yehos-patched.iso &
+gdb
+```
+
+The contents of the `.gdbinit` file point gdb to target qemu (localhost:1234).
+
+It is possible to get a console for interacting with qemu by following the instructions [here](https://en.wikibooks.org/wiki/QEMU/Monitor). Running `info tlb` in the console is especially helpful for debugging virtual memory mappings.
+
 ## Memory Layout
 
 ### Physical Memory
