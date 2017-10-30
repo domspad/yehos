@@ -3,6 +3,20 @@
 
 We are building an operating system from scratch under the guidance of @saulpw and his work on [frotzos](https://github.com/saulpw/frotzos). This is our story...
 
+## Components
+
+* Bootloader
+* Keyboard IO
+* Video output
+* Lazy loading of applications from ISO disk
+* Virtual memory and demand paging
+* Multiple concurrent processes
+
+Yehos supports two applications:
+
+* A video player playing a text-encoded version of the film Star Wars (1977).
+* A REPL for the Forth programming language, implemented in x86 assembly.
+
 ## Requirements
 
  - The [qemu](www.qemu.org/) emulator (depending on installation, you may have to also need `qemu-arch-extra` to support the i386 architecture. 
