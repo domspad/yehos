@@ -76,4 +76,6 @@ run: yehos-patched.iso
 
 clean:
 	rm -f bootloader.bin kernel.bin kernel.elf yehos.iso *.lst *.map *.o isopatcher
+	make -C apps clean
 
+.PHONY: apps run clean
