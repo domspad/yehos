@@ -29,7 +29,7 @@ Yehos supports two applications:
 
 ## Building
 
-Linux users can simply run `make`. When developing applications, it's necessary to first Make the application and then include it in the ISO. To do this, run `make` first inside the application directory and then again from the project root.
+Linux users can simply run `make`.
 
 It is suggested that Macs first build a [cross-compiler](https://en.wikipedia.org/wiki/Cross_compiler). This will allow them to generate 32-bit ELF binary files.
 
